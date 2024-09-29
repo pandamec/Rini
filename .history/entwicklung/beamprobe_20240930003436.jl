@@ -227,6 +227,8 @@ display(FigThermal)
 
 ###### Cylindrical via ############
 
+FigThermal2=plot()
+FigThermal3=plot()
 
 ## Materials
 
@@ -257,7 +259,7 @@ alpha_m, alpha_s = alphaal,alphap
 
 ## Geometrie
 
-r_m , r_s  = 0.030 , 0.035
+r_m , r_s  = 0.012 , 0.03
 l = 10
 
 ## Load
@@ -294,11 +296,6 @@ for deltaT in deltaTRange
 
 end
 
-FigThermal1=plot()
-FigThermal2=plot()
-FigThermal3=plot()
-
-plot!(FigThermal1, deltaTRange, dr*1000,    label="u (um)" , lw=2, linestyle=:dash, color=:blue, marker=:square)
 plot!(FigThermal2, deltaTRange, sigma, label="Palyrene-Aluminum"       , lw=2, linestyle=:dash, color=:black, marker=:square)
 plot!(FigThermal3, deltaTRange, (dvm/vm0)*100,    label="Metal" , lw=2, linestyle=:dash, color=:red, marker=:circle)
 plot!(FigThermal3, deltaTRange, (dvs/vs0)*100,    label="Substrate" , lw=2, linestyle=:dash, color=:blue, marker=:square)

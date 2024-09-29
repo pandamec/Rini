@@ -217,89 +217,12 @@ for deltaT in deltaTRange
 end
 
 sigma1_max
- 
+
+
+
 plot!(FigThermal,deltaTRange, sigma1_max, label="Si", lw=2, linestyle=:dash, color=:black, marker=:square)
 plot!(FigThermal,deltaTRange, sigma2_max, label="Parylene", lw=2, linestyle=:dash, color=:yellow, marker=:circle)
 plot!(FigThermal,deltaTRange, sigma3_max, label="Aluminum", lw=2, linestyle=:dash, color=:orange, marker=:diamond)
 plot!(FigThermal,deltaTRange, sigma_2, label="Y-Richtung", lw=2, linestyle=:dash, color=:blue, marker=:hexagon)
 
 display(FigThermal)
-
-###### Cylindrical via ############
-
-
-## Materials
-
-#Parylene
-Ep=2800
-vp=0.4
-alphap=35*10^(-6)
-
-#Aluminum
-Eal=70000
-val=0.33
-alphaal=23.6*10^(-6)
-
-
-## Equations
-
-## Verformung 
-u_m,u_s, u_s2 =symbols("u_m u_s u_s2")
-
-## Spannung
-p=symbols("p")
-
-## Layers
-
-v_m,v_s          = val, vp
-E_m,E_s          = Eal, Ep
-alpha_m, alpha_s = alphaal,alphap
-
-## Geometrie
-
-r_m , r_s  = 0.030 , 0.035
-l = 10
-
-## Load
-
-deltaTRange=range(0, 150, step=10) 
-sigma=[]
-dr=[]
-dvm=[]
-dvs=[]
-
-vm0  = (pi*l)*(r_m^2)
-vs0  = (pi*l)*(r_s^2-r_m^2)
-
-for deltaT in deltaTRange
-
-    ## Kompatibilität
-
-    eq1 = u_s - ((1-v_s)/E_s)*((p*r_m^2)/(r_s^2-r_m^2))*r_m+(((1+v_s)/E_s)*(r_m^2*r_s^2)/r_m)*(p/(r_s^2-r_m^2)) - r_m*alpha_s*deltaT
-    eq2 = u_m - ((1-v_m)/E_m)*((-p*r_m^2)/(r_m^2))*r_m - r_m*alpha_m*deltaT
-    eq3 = u_s  - u_m
-    eq4 = u_s2 - ((1-v_s)/E_s)*(p*r_m^2)/(r_s^2-r_m^2)*r_s+(((1+v_s)/E_s)*(r_m^2*r_s^2)/r_s)*(p/(r_s^2-r_m^2)) - r_s*alpha_s*deltaT
-
-    ## solve
-    sol=solve([eq1,eq2,eq3,eq4],
-              [u_s,u_s2,u_m,p])
-    sol
-    dvm_i = (pi*l)*((r_m+sol[u_m])^2-r_m^2)
-    dvs_i = (pi*l)*(((r_s+sol[u_s2])^2-(r_m+sol[u_s])^2)-(r_s^2-r_m^2))
-
-    push!(sigma, sol[p])
-    push!(dr,  sol[u_m])
-    push!(dvm, dvm_i)
-    push!(dvs, dvs_i)
-
-end
-
-FigThermal1=plot()
-FigThermal2=plot()
-FigThermal3=plot()
-
-plot!(FigThermal1, deltaTRange, dr*1000,    label="u (um)" , lw=2, linestyle=:dash, color=:blue, marker=:square)
-plot!(FigThermal2, deltaTRange, sigma, label="Palyrene-Aluminum"       , lw=2, linestyle=:dash, color=:black, marker=:square)
-plot!(FigThermal3, deltaTRange, (dvm/vm0)*100,    label="Metal" , lw=2, linestyle=:dash, color=:red, marker=:circle)
-plot!(FigThermal3, deltaTRange, (dvs/vs0)*100,    label="Substrate" , lw=2, linestyle=:dash, color=:blue, marker=:square)
-

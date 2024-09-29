@@ -227,6 +227,8 @@ display(FigThermal)
 
 ###### Cylindrical via ############
 
+FigThermal2=plot()
+FigThermal3=plot()
 
 ## Materials
 
@@ -257,7 +259,7 @@ alpha_m, alpha_s = alphaal,alphap
 
 ## Geometrie
 
-r_m , r_s  = 0.030 , 0.035
+r_m , r_s  = 0.02 , 0.04
 l = 10
 
 ## Load
@@ -275,8 +277,8 @@ for deltaT in deltaTRange
 
     ## Kompatibilität
 
-    eq1 = u_s - ((1-v_s)/E_s)*((p*r_m^2)/(r_s^2-r_m^2))*r_m+(((1+v_s)/E_s)*(r_m^2*r_s^2)/r_m)*(p/(r_s^2-r_m^2)) - r_m*alpha_s*deltaT
-    eq2 = u_m - ((1-v_m)/E_m)*((-p*r_m^2)/(r_m^2))*r_m - r_m*alpha_m*deltaT
+    eq1 = u_s - ((1-v_s)/E_s)*(p*r_m^2)/(r_s^2-r_m^2)*r_m+(((1+v_s)/E_s)*(r_m^2*r_s^2)/r_m)*(p/(r_s^2-r_m^2)) - r_m*alpha_s*deltaT
+    eq2 = u_m - ((1-v_m)/E_m)*(-p*r_m^2)/(r_m^2)*r_m - r_m*alpha_m*deltaT
     eq3 = u_s  - u_m
     eq4 = u_s2 - ((1-v_s)/E_s)*(p*r_m^2)/(r_s^2-r_m^2)*r_s+(((1+v_s)/E_s)*(r_m^2*r_s^2)/r_s)*(p/(r_s^2-r_m^2)) - r_s*alpha_s*deltaT
 
@@ -294,12 +296,7 @@ for deltaT in deltaTRange
 
 end
 
-FigThermal1=plot()
-FigThermal2=plot()
-FigThermal3=plot()
-
-plot!(FigThermal1, deltaTRange, dr*1000,    label="u (um)" , lw=2, linestyle=:dash, color=:blue, marker=:square)
-plot!(FigThermal2, deltaTRange, sigma, label="Palyrene-Aluminum"       , lw=2, linestyle=:dash, color=:black, marker=:square)
-plot!(FigThermal3, deltaTRange, (dvm/vm0)*100,    label="Metal" , lw=2, linestyle=:dash, color=:red, marker=:circle)
-plot!(FigThermal3, deltaTRange, (dvs/vs0)*100,    label="Substrate" , lw=2, linestyle=:dash, color=:blue, marker=:square)
+plot!(FigThermal2,deltaTRange, sigma, label="Si"       , lw=2, linestyle=:dash, color=:black, marker=:square)
+plot!(FigThermal3,deltaTRange, (dvm/vm0)*100,    label="Metal" , lw=2, linestyle=:dash, color=:red, marker=:circle)
+plot!(FigThermal3,deltaTRange, (dvs/vs0)*100,    label="Substrate" , lw=2, linestyle=:dash, color=:blue, marker=:square)
 
