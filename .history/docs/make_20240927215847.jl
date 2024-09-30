@@ -1,10 +1,10 @@
 using Documenter
-using Rini
+using Kzuverlassigkeit
 
 makedocs(
-    sitename = "Rini",
+    sitename = "Kzuverlassigkeit",
     format = Documenter.HTML(),
-    modules = [Rini]
+    modules = [Kzuverlassigkeit]
 )
 
 # Documenter can also automatically deploy documentation to gh-pages.
