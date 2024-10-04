@@ -1,23 +1,6 @@
 
 ####### Thermalverhalten ##########
 
-function E_Aluminium(T)
-
-end
-
-function E_Copper(T)
-    
-end
-
-
-function ThermoE(E,Ge,deltav)
-
-
-    return 
-
-end
-
-
 function StaticBeam(E,Ge,deltav)
 
     E3=E[1,:] #Silicon
