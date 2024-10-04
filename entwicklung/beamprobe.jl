@@ -5,7 +5,9 @@ using Plots
 
 Fig=plot()
 Figzoom=plot()
+using Rini
 
+E_m=Rini.E_Aluminium(100)
 ####### Fatigue-Test
     ####### Parylene ###########
     ## Setup Konfiguration

@@ -5,6 +5,6 @@ module Rini
     using SymPy
 
     include("SimpleModel.jl")
-
+    include("properties.jl")
     export StaticBeam, properties
 end # module Rini
