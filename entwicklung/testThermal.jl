@@ -53,7 +53,7 @@ using Plots
     plot!(FigThermal3, deltaTRange, (dvs/vs0)*100,   ylims=(0, 2.5),   label="Parylene"     ,  xlabel="Temperature (C)", ylabel="Volume increase(%)",lw=2, linestyle=:dash, color=:orange, marker=:square)
 
 
-    #### Polyimide - Copper #####
+#### Polyimide - Copper #####
     
     ## Materials
     E=[3200 0.34 55*10^(-6); 117000 0.3 16.5*10^(-6)] #Parylene und Aluminium
