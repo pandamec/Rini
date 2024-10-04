@@ -2,7 +2,56 @@
 ####### Thermalverhalten ##########
 
 
-function StaticBeam(E,Ge,deltav)
+function MetalSubstrat(E,Ge,deltaT)
+    ###### Cylindrical via ############
+ 
+
+    ## Materials
+
+    #Substrate
+    E_s, v_s, alpha_s =E[1,:]
+    
+    #Metall
+    E_m, v_m, alpha_m =E[2,:]
+   
+    
+    ## Equations
+
+    ## Verformung 
+    u_m,u_s, u_s2 =symbols("u_m u_s u_s2")
+
+    ## Spannung
+    p=symbols("p")
+
+
+    ## Geometrie
+
+     r_s, r_m, l  = Ge 
+
+    ## Load
+
+
+        ## Kompatibilität
+        E_m=Rini.E_Aluminium(deltaT)
+        eq1 = u_s - ((1-v_s)/E_s)*((-p*r_m^2)/(r_s^2-r_m^2))*r_m+(((1+v_s)/E_s)*(r_m^2*r_s^2)/r_m)*(p/(r_s^2-r_m^2)) - r_m*alpha_s*deltaT
+        eq2 = u_m - ((1-v_m)/E_m)*((+p*r_m^2)/(r_m^2))*r_m - r_m*alpha_m*deltaT
+        eq3 = u_s  - u_m
+        eq4 = u_s2 - ((1-v_s)/E_s)*(-p*r_m^2)/(r_s^2-r_m^2)*r_s+(((1+v_s)/E_s)*(r_m^2*r_s^2)/r_s)*(p/(r_s^2-r_m^2)) - r_s*alpha_s*deltaT
+
+        ## solve
+        sol=solve([eq1,eq2,eq3,eq4],
+                [u_s,u_s2,u_m,p])
+        
+
+
+        return [sol[p], sol[u_m], sol[u_s2]]
+    
+end
+
+
+####### Fatigue ##########
+
+function StaticComposite(E,Ge,deltav)
 
     E3=E[1,:] #Silicon
     E2=E[2,:]
