@@ -6,5 +6,5 @@ module Rini
 
     include("SimpleModel.jl")
 
-    export StaticBeam
+    export StaticBeam, properties
 end # module Rini
