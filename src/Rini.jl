@@ -7,4 +7,6 @@ module Rini
     include("AnalytischesModell.jl")
     include("properties.jl")
     export StaticBeam, properties
+
+    
 end # module Rini
