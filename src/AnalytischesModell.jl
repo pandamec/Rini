@@ -53,6 +53,7 @@ end
 
 ####### Fatigue ##########
 
+
 function StaticBeam(E,Ge,deltav)
 
     E3=E[1,:] #Silicon
@@ -102,6 +103,7 @@ function StaticBeam(E,Ge,deltav)
     eqb=M-m*(1/3)*(w*Es*((ds-c_val)^3-(c_val)^3)+wp*Ek*((ds-c_val+dk)^3-(ds-c_val)^3)+wp*E1*((ds-c_val+dk+d1)^3-(ds-c_val+dk)^3)+wp*E2*((ds-c_val+dk+d1+d2)^3-(ds-c_val+dk+d1)^3)+wp*E3*((ds-c_val+dk+d1+d2+d3)^3-(ds-c_val+dk+d1+d2)^3)+w*Es*((c_val)^3))
     solb=solve(eqb,m)
     m_val=solb[m]
+    
 
     sigma3=m_val*(ds-c_val+dk+d1+d2+d3)*E3[]
     sigma2=m_val*(ds-c_val+dk+d1+d2)*E2[]
