@@ -1,3 +1,4 @@
+
 # Extra layer added Klebstoff
 #using Pkg
 using Rini
@@ -10,7 +11,7 @@ using Plots
 
     ## Geometrie 
     E= [150000; 2800; 2800; 3.3; 200000] #First layer Silicon
-    Ge=[0.32 20 10 ; 0.01 20 10; 0.01 10 10; 0.5 20 10; 0.5 70 15 ] 
+    Ge=[0.32 20 10 ; 0.01 20 10; 0.01 20 10; 0.5 20 10; 0.5 65 15 ] 
 
     sigma1_max=[]
     sigma2_max=[]
@@ -18,7 +19,7 @@ using Plots
     sigmak_max=[]
     sigmas_max=[]
 
-    deltamax=range(0,3,10)
+    deltamax=range(0,1,10)
 
     for deltav in deltamax
 
@@ -32,17 +33,23 @@ using Plots
         push!(sigmas_max,sigma[5])
 
     end
+    Es=200000
+    w=Ge[5,3]
+    ds=Ge[5,1]
+    l=Ge[5,2]
+    I=w*ds^3/12
+    k=48*Es*I/l^3   
 
-    plot!(Fig,deltamax, sigma3_max, label="Si", lw=2, linestyle=:dash, color=:black, marker=:square)
-    plot!(Fig,deltamax, sigma2_max, label="Parylene 2", lw=2, linestyle=:dash, color=:yellow, marker=:circle)
-    plot!(Fig,deltamax, sigma1_max, label="Parylene 1", lw=2, linestyle=:dash, color=:orange, marker=:diamond)
-    plot!(Fig,deltamax, sigmak_max, label="Klebstoff", lw=2, linestyle=:dash, color=:red, marker=:square)
-    plot!(Fig,deltamax, sigmas_max, label="Stahl", xlabel="Verschiebungsamplitude(mm)", ylabel="Vorspannung (MPa)", lw=2, linestyle=:dash, color=:gray, marker=:circle)
+    plot!(Fig,deltamax*k, sigma3_max, label="Si", lw=2, linestyle=:dash, color=:black, marker=:square)
+    plot!(Fig,deltamax*k, sigma2_max, label="Parylene 2", lw=2, linestyle=:dash, color=:yellow, marker=:circle)
+    plot!(Fig,deltamax*k, sigma1_max, label="Parylene 1", lw=2, linestyle=:dash, color=:orange, marker=:diamond)
+    plot!(Fig,deltamax*k, sigmak_max, label="Klebstoff", lw=2, linestyle=:dash, color=:red, marker=:square)
+    plot!(Fig,deltamax*k, sigmas_max, label="Stahl", xlabel="Verschiebungsamplitude(mm)", ylabel="Vorspannung (MPa)", lw=2, linestyle=:dash, color=:gray, marker=:circle)
 
     
-    plot!(Figzoom,deltamax, sigma2_max, label="Parylene 2", lw=2, linestyle=:dash, color=:yellow, marker=:circle)
-    plot!(Figzoom,deltamax, sigma1_max, label="Parylene 1",lw=2, linestyle=:dash, color=:orange, marker=:diamond)
-    plot!(Figzoom,deltamax, sigmak_max, label="Klebstoff", xlabel="Verschiebungsamplitude(mm)", ylabel="Vorspannung (MPa)", lw=2, linestyle=:dash, color=:red, marker=:square)
+    plot!(Figzoom,deltamax*k, sigma2_max, label="Parylene 2", lw=2, linestyle=:dash, color=:yellow, marker=:circle)
+    plot!(Figzoom,deltamax*k, sigma1_max, label="Parylene 1",lw=2, linestyle=:dash, color=:orange, marker=:diamond)
+    plot!(Figzoom,deltamax*k, sigmak_max, label="Klebstoff", xlabel="Verschiebungsamplitude(mm)", ylabel="Vorspannung (MPa)", lw=2, linestyle=:dash, color=:red, marker=:square)
 
 
     Fig

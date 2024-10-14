@@ -62,7 +62,7 @@ function StaticBeam(E,Ge,deltav)
     Ek=E[4,:]
     Es=E[5,:]
 
-    t3,l3,w3 = Ge[1,:]
+    t3,l3,w3 = Ge[1,:] #Silicon
     t2,l2,w2 = Ge[2,:]
     t1,l1,w1 = Ge[3,:]
     tk,lk,wk = Ge[4,:]
@@ -83,27 +83,28 @@ function StaticBeam(E,Ge,deltav)
     ds=ts #mm
     w=ws #mm
     I=w*ds^3/12
-    l=66
+    l=65
 
     ## Krafte und Torque
-    F=deltav*48*Es*I/l^3
+    F=(deltav*48*Es*I)/l^3
     M_max=(F/2)*l/2
-    x_p=18
+    x_p=19
     M=(2*x_p/l)*M_max #N.mm
-
+     print(F)
     ## Neutral axis berechnung
 
     c = symbols("c")
     eq=(1/2)*(w*Es*((ds-c)^2-(c)^2)+wp*Ek*((ds-c+dk)^2-(ds-c)^2)+wp*E1*((ds-c+dk+d1)^2-(ds-c+dk)^2)+wp*E2*((ds-c+dk+d1+d2)^2-(ds-c+d1+dk)^2)+wp*E3*((ds-c+dk+d1+d2+d3)^2-(ds-c+dk+d1+d2)^2))
     sol=solve(eq,c)
     c_val=sol[c]
+    print(c_val)
     ## Belastung
 
     m=symbols("m")
-    eqb=M-m*(1/3)*(w*Es*((ds-c_val)^3-(c_val)^3)+wp*Ek*((ds-c_val+dk)^3-(ds-c_val)^3)+wp*E1*((ds-c_val+dk+d1)^3-(ds-c_val+dk)^3)+wp*E2*((ds-c_val+dk+d1+d2)^3-(ds-c_val+dk+d1)^3)+wp*E3*((ds-c_val+dk+d1+d2+d3)^3-(ds-c_val+dk+d1+d2)^3)+w*Es*((c_val)^3))
+    eqb=M-m*(1/3)*(w*Es*((ds-c_val)^3)+wp*Ek*((ds-c_val+dk)^3-(ds-c_val)^3)+wp*E1*((ds-c_val+dk+d1)^3-(ds-c_val+dk)^3)+wp*E2*((ds-c_val+dk+d1+d2)^3-(ds-c_val+dk+d1)^3)+wp*E3*((ds-c_val+dk+d1+d2+d3)^3-(ds-c_val+dk+d1+d2)^3)+w*Es*((c_val)^3))
     solb=solve(eqb,m)
     m_val=solb[m]
-    
+    print(m_val)
 
     sigma3=m_val*(ds-c_val+dk+d1+d2+d3)*E3[]
     sigma2=m_val*(ds-c_val+dk+d1+d2)*E2[]
@@ -116,5 +117,50 @@ function StaticBeam(E,Ge,deltav)
    
 
     return sigma
+
+end
+
+function StaticBeam2(E,Ge,deltav)
+
+
+    Ek=E[4,:]
+    Es=E[5,:]
+
+    tk,lk,wk = Ge[4,:]
+    ts,ls,ws = Ge[5,:]
+
+    # Fatigue-Test
+    ####### Parylene ###########
+
+    ## Geometrie 
+
+    dk=tk
+    wp=w1 #mm
+
+    ## Messaufbau Konfiguration
+
+    ds=ts #mm
+    w=ws #mm
+    I=w*ds^3/12
+    l=65
+
+    ## Krafte und Torque
+    F=(deltav*48*Es*I)/l^3
+    M_max=(F/2)*l/2
+    x_p=19
+    M=(2*x_p/l)*M_max #N.mm
+     print(F)
+    ## Neutral axis berechnung
+
+    c = symbols("c")
+    eq=(1/2)*(w*Es*((ds-c)^2-(c)^2)+wp*Ek*((ds-c+dk)^2-(ds-c)^2))
+    sol=solve(eq,c)
+    c_val=sol[c]
+    print(c_val)
+    ## Belastung
+
+    
+
+    return c_val
 
 end
