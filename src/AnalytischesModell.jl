@@ -83,34 +83,40 @@ function StaticBeam(E,Ge,deltav)
     ds=ts #mm
     w=ws #mm
     I=w*ds^3/12
-    l=65
+    l=57
 
     ## Krafte und Torque
     F=(deltav*48*Es*I)/l^3
     M_max=(F/2)*l/2
-    x_p=19
+    x_p=16.5
     M=(2*x_p/l)*M_max #N.mm
-     print(F)
+    #print(F)
     ## Neutral axis berechnung
 
     c = symbols("c")
-    eq=(1/2)*(w*Es*((ds-c)^2-(c)^2)+wp*Ek*((ds-c+dk)^2-(ds-c)^2)+wp*E1*((ds-c+dk+d1)^2-(ds-c+dk)^2)+wp*E2*((ds-c+dk+d1+d2)^2-(ds-c+d1+dk)^2)+wp*E3*((ds-c+dk+d1+d2+d3)^2-(ds-c+dk+d1+d2)^2))
+    eq=(1/2)*(w*Es*((ds-c)^2-(0-c)^2)+wp*Ek*((ds-c+dk)^2-(ds-c)^2)+wp*E1*((ds-c+dk+d1)^2-(ds-c+dk)^2)+wp*E2*((ds-c+dk+d1+d2)^2-(ds-c+d1+dk)^2)+wp*E3*((ds-c+dk+d1+d2+d3)^2-(ds-c+dk+d1+d2)^2))
     sol=solve(eq,c)
+    
     c_val=sol[c]
+    print(ds-c_val)
     print(c_val)
     ## Belastung
 
     m=symbols("m")
-    eqb=M-m*(1/3)*(w*Es*((ds-c_val)^3)+wp*Ek*((ds-c_val+dk)^3-(ds-c_val)^3)+wp*E1*((ds-c_val+dk+d1)^3-(ds-c_val+dk)^3)+wp*E2*((ds-c_val+dk+d1+d2)^3-(ds-c_val+dk+d1)^3)+wp*E3*((ds-c_val+dk+d1+d2+d3)^3-(ds-c_val+dk+d1+d2)^3)+w*Es*((c_val)^3))
+    eqb=M-m*(1/3)*(w*Es*((ds-c_val)^3-((0-c_val)^3))+wp*Ek*((ds-c_val+dk)^3-(ds-c_val)^3)+wp*E1*((ds-c_val+dk+d1)^3-(ds-c_val+dk)^3)+wp*E2*((ds-c_val+dk+d1+d2)^3-(ds-c_val+dk+d1)^3)+wp*E3*((ds-c_val+dk+d1+d2+d3)^3-(ds-c_val+dk+d1+d2)^3))
     solb=solve(eqb,m)
     m_val=solb[m]
-    print(m_val)
+    #print(m_val)
+
+   # sigma3=m_val*(ds-c_val+dk+d1+d2+d3)*E3[]
+    #sigma2=m_val*(ds-c_val+dk+d1+d2)*E2[]
+    #sigma1=m_val*(ds-c_val+dk+d1)*E1[]
+    #sigmak=m_val*(ds-c_val+dk)*Ek[]
 
     sigma3=m_val*(ds-c_val+dk+d1+d2+d3)*E3[]
     sigma2=m_val*(ds-c_val+dk+d1+d2)*E2[]
     sigma1=m_val*(ds-c_val+dk+d1)*E1[]
     sigmak=m_val*(ds-c_val+dk)*Ek[]
-
     sigmas=m_val*(c_val)*Es[]
 
     sigma=[sigma3, sigma2, sigma1,sigmak, sigmas]
@@ -147,7 +153,7 @@ function StaticBeam2(E,Ge,deltav)
     ## Krafte und Torque
     F=(deltav*48*Es*I)/l^3
     M_max=(F/2)*l/2
-    x_p=19
+    x_p=16.5
     M=(2*x_p/l)*M_max #N.mm
      print(F)
     ## Neutral axis berechnung

@@ -11,7 +11,7 @@ using Plots
 
     ## Geometrie 
     E= [150000; 2800; 2800; 3.3; 200000] #First layer Silicon
-    Ge=[0.32 20 10 ; 0.01 20 10; 0.01 20 10; 0.5 20 10; 0.5 65 15 ] 
+    Ge=[0.32 20 10 ; 0.01 20 10; 0.01 20 10; 0.1 20 10; 0.25 57 15 ] 
 
     sigma1_max=[]
     sigma2_max=[]
@@ -19,7 +19,7 @@ using Plots
     sigmak_max=[]
     sigmas_max=[]
 
-    deltamax=range(0,1,10)
+    deltamax=range(0,2,20)
 
     for deltav in deltamax
 
@@ -33,6 +33,7 @@ using Plots
         push!(sigmas_max,sigma[5])
 
     end
+    
     Es=200000
     w=Ge[5,3]
     ds=Ge[5,1]
