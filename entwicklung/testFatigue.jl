@@ -45,12 +45,12 @@ using Plots
     plot!(Fig,deltamax*k, sigma2_max, label="Parylene 2", lw=2, linestyle=:dash, color=:yellow, marker=:circle)
     plot!(Fig,deltamax*k, sigma1_max, label="Parylene 1", lw=2, linestyle=:dash, color=:orange, marker=:diamond)
     plot!(Fig,deltamax*k, sigmak_max, label="Klebstoff", lw=2, linestyle=:dash, color=:red, marker=:square)
-    plot!(Fig,deltamax*k, sigmas_max, label="Stahl", xlabel="Verschiebungsamplitude(mm)", ylabel="Vorspannung (MPa)", lw=2, linestyle=:dash, color=:gray, marker=:circle)
+    plot!(Fig,deltamax*k, sigmas_max, label="Stahl", xlabel="Kraft(N)", ylabel="Vorspannung (MPa)", lw=2, linestyle=:dash, color=:gray, marker=:circle)
 
     
     plot!(Figzoom,deltamax*k, sigma2_max, label="Parylene 2", lw=2, linestyle=:dash, color=:yellow, marker=:circle)
     plot!(Figzoom,deltamax*k, sigma1_max, label="Parylene 1",lw=2, linestyle=:dash, color=:orange, marker=:diamond)
-    plot!(Figzoom,deltamax*k, sigmak_max, label="Klebstoff", xlabel="Verschiebungsamplitude(mm)", ylabel="Vorspannung (MPa)", lw=2, linestyle=:dash, color=:red, marker=:square)
+    plot!(Figzoom,deltamax*k, sigmak_max, label="Klebstoff", xlabel="Kraft(N)", ylabel="Vorspannung (MPa)", lw=2, linestyle=:dash, color=:red, marker=:square)
 
 
     Fig
