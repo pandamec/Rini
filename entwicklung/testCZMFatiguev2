@@ -1,0 +1,190 @@
+using Plots
+using LinearAlgebra
+
+# Material and geometry properties
+struct Material
+    E::Float64      # Young's modulus (Pa)
+    ν::Float64      # Poisson's ratio
+    h::Float64      # Thickness (m)
+    L::Float64      # Length (m)
+end
+
+struct CohesiveProperties
+    σ_max::Float64  # Maximum normal strength (Pa)
+    τ_max::Float64  # Maximum shear strength (Pa)
+    δ_n_c::Float64  # Critical normal separation (m)
+    δ_s_c::Float64  # Critical shear separation (m)
+    K_n::Float64    # Normal stiffness (N/m³)
+    K_s::Float64    # Shear stiffness (N/m³)
+    η::Float64      # Fatigue degradation parameter (per cycle)
+end
+
+# Define properties
+main_beam = Material(210e9, 0.3, 0.2e-3, 0.07)
+layered_beam = Material(180e9, 0.3, 0.675e-3, 0.07)
+cohesive = CohesiveProperties(5e6, 3e6, 0.001, 0.001, 5e6/0.001, 3e6/0.001, 1e-3)
+
+# Discretization
+n_elements = 100
+x = range(0, main_beam.L, length=n_elements)
+
+# Main beam deflection under three-point bending
+function main_beam_deflection(x, P, beam)
+    I = beam.h^3 / 12
+    L = beam.L
+    w = zeros(length(x))
+    for i in 1:length(x)
+        if x[i] <= L/2
+            w[i] = -P * x[i] * (L^2 - x[i]^2) / (48 * beam.E * I)
+        else
+            w[i] = -P * (L - x[i]) * (L^2 - (L - x[i])^2) / (48 * beam.E * I)
+        end
+    end
+    return w
+end
+
+# Layered beam displacements
+function layered_beam_displacements(x, P, main_beam, layered_beam, a, damage, cohesive)
+    w_main = main_beam_deflection(x, P, main_beam)
+    I_layer = layered_beam.h^3 / 12
+    w_top = copy(w_main)
+    u_top = zeros(length(x))
+    
+    for i in 1:length(x)
+        if x[i] > a  # Cohesive zone
+            curvature = abs(P * (main_beam.L - 2x[i]) / (2 * main_beam.E * I_layer))
+            δ_n = curvature * layered_beam.h / 2  # Ensure non-zero separation
+            δ_s = 0.0
+            σ, τ = cohesive_traction(δ_n, δ_s, cohesive, damage[i])
+            w_top[i] = w_main[i] + δ_n
+            u_top[i] = δ_s
+            if x[i] ≈ a + (x[2] - x[1])  # Debug at first point beyond crack tip
+                println("x = $(x[i]): δ_n = $δ_n, σ = $σ, damage = $(damage[i])")
+            end
+        end
+    end
+    return w_main, w_top, u_top
+end
+
+# Mixed-mode cohesive law (bilinear)
+function cohesive_traction(δ_n, δ_s, cohesive, damage)
+    σ_max = cohesive.σ_max * (1 - damage)
+    τ_max = cohesive.τ_max * (1 - damage)
+    K_n = cohesive.K_n * (1 - damage)
+    K_s = cohesive.K_s * (1 - damage)
+    δ_n_c = cohesive.δ_n_c
+    δ_s_c = cohesive.δ_s_c
+    
+    δ_eff = sqrt(δ_n^2 + δ_s^2)
+    δ_eff_c = sqrt(δ_n_c^2 + δ_s_c^2)
+    
+    if δ_eff <= δ_eff_c * σ_max / K_n
+        σ = K_n * δ_n
+        τ = K_s * δ_s
+    elseif δ_eff < δ_eff_c
+        λ = (δ_eff_c - δ_eff) / (δ_eff_c - σ_max / K_n)
+        σ = σ_max * λ * (δ_n / δ_eff)
+        τ = τ_max * λ * (δ_s / δ_eff)
+    else
+        σ = 0.0
+        τ = 0.0
+    end
+    return σ, τ
+end
+
+# Fatigue damage evolution
+function update_damage(damage, δ_n, δ_s, cohesive, cycles)
+    δ_eff = sqrt(δ_n^2 + δ_s^2)
+    δ_eff_c = sqrt(cohesive.δ_n_c^2 + cohesive.δ_s_c^2)
+    dD_dn = cohesive.η * (δ_eff / δ_eff_c)^2
+    return min(damage + dD_dn * cycles, 1.0)
+end
+
+# Simulation focused on cohesive law
+function simulate_cohesive_law(P, cycles, main_beam, layered_beam, cohesive)
+    a = main_beam.L / 4
+    damage = zeros(n_elements)
+    
+    cycle_points = [0, 200, 400, 600, 800, 1000]
+    δ_n_history = zeros(length(cycle_points))
+    δ_s_history = zeros(length(cycle_points))
+    σ_history = zeros(length(cycle_points))
+    τ_history = zeros(length(cycle_points))
+    crack_lengths = zeros(length(cycle_points))
+    
+    for (i, n) in enumerate(cycle_points)
+        for _ in (i == 1 ? 0 : cycle_points[i-1]+1):n
+            w_bottom, w_top, u_top = layered_beam_displacements(x, P, main_beam, layered_beam, a, damage, cohesive)
+            δ_n = w_top - w_bottom
+            δ_s = u_top
+            
+            σ = zeros(n_elements)
+            τ = zeros(n_elements)
+            for j in 1:n_elements
+                σ[j], τ[j] = cohesive_traction(δ_n[j], δ_s[j], cohesive, damage[j])
+                if x[j] > a
+                    damage[j] = update_damage(damage[j], δ_n[j], δ_s[j], cohesive, 1)
+                end
+            end
+            
+            old_a = a
+            for j in 1:n_elements
+                if damage[j] >= 1.0 && x[j] > a
+                    a = x[j]
+                    break
+                end
+            end
+        end
+        
+        # Debug: Damage near crack tip
+        idx_start = findfirst(isequal(a), x)
+        if !isnothing(idx_start) && idx_start < n_elements-5
+            println("Cycle $n: Damage near crack tip (x = $a): $(damage[idx_start:idx_start+5])")
+        end
+        
+        # Fallback: Use first point beyond crack tip
+        idx = findfirst(j -> x[j] > a, 1:n_elements)
+        if !isnothing(idx)
+            w_bottom, w_top, u_top = layered_beam_displacements(x, P, main_beam, layered_beam, a, damage, cohesive)
+            δ_n = w_top[idx] - w_bottom[idx]
+            δ_s = u_top[idx]
+            σ, τ = cohesive_traction(δ_n, δ_s, cohesive, damage[idx])
+            δ_n_history[i] = δ_n
+            δ_s_history[i] = δ_s
+            σ_history[i] = σ
+            τ_history[i] = τ
+            crack_lengths[i] = a
+            println("Cycle $n: Crack length = $a m, δ_n = $δ_n, σ = $σ, δ_s = $δ_s, τ = $τ at x = $(x[idx]), damage = $(damage[idx])")
+        else
+            println("Cycle $n: No point beyond crack tip found (crack length = $a m)")
+        end
+    end
+    
+    println("Final δ_n_history: $δ_n_history")
+    println("Final σ_history: $σ_history")
+    return δ_n_history, δ_s_history, σ_history, τ_history, cycle_points, crack_lengths
+end
+
+# Run simulation
+P = 100.0  # Further increased load
+cycles = 2000
+δ_n_hist, δ_s_hist, σ_hist, τ_hist, cycle_points, crack_lengths = simulate_cohesive_law(P, cycles, main_beam, layered_beam, cohesive)
+
+# Plot cohesive law
+p1 = plot(xlabel="Normal Separation (m)", ylabel="Normal Traction (Pa)", title="Cohesive Law: Normal")
+p2 = plot(xlabel="Shear Separation (m)", ylabel="Shear Traction (Pa)", title="Cohesive Law: Shear")
+
+for (i, n) in enumerate(cycle_points)
+    scatter!(p1, [δ_n_hist[i]], [σ_hist[i]], label="Cycle $n", markersize=5)
+    scatter!(p2, [δ_s_hist[i]], [τ_hist[i]], label="Cycle $n", markersize=5)
+end
+
+#plot!(p1, xlims=(0, 0.1), ylims=(0, 6e7))
+
+plot!(p1)
+#plot!(p2, xlims=(0, 0.005), ylims=(0, 3e7))
+plot!(p2)
+
+plot(p1, p2, layout=(2,1), size=(800, 600), legend=:topleft)
+
+#####

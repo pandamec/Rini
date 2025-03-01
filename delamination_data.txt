@@ -1,0 +1,2 @@
+Cycle,Crack_Length_mm,Energy_Release_Rate_Jm2
+0,20.0,83.33333333333333
