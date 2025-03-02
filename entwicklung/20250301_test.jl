@@ -1,18 +1,15 @@
 
 ###############################
-
-using LinearAlgebra
-using SparseArrays
+using Rini
 using GLMakie
-
-# Material properties
+# Eigenschaften der Materialien
 struct Material
-    E::Float64      # Young's modulus (Pa)
-    ν::Float64      # Poisson's ratio
+    E::Float64          # Young's modulus (Pa)
+    ν::Float64          #   Poisson's ratio
     thickness::Float64  # Thickness (m)
 end
 
-# Cohesive zone properties
+# CZM Eigenschaften
 struct CohesiveProperties
     K0::Float64     # Initial stiffness (N/m³)
     σ_max::Float64  # Maximum traction (Pa)
@@ -20,144 +17,46 @@ struct CohesiveProperties
     m::Float64      # Fatigue degradation parameter
 end
 
-# Define materials
-const Si = Material(3e9, 0.28, 675e-6)
-const Parylene = Material(2.8e9, 0.4, 10e-6)
-const Steel = Material(200e9, 0.3, 200e-6)
+struct TestSetup
+    L_steel::Float64  
+    L_layered::Float64  
+    n_elem::Int 
+    dx::Float64  
+    nodes::Vector{Float64}
+    start_pos::Float64  
+    end_pos::Float64  
+    start_elem::Int
+    end_elem::Int
+    n_elem_layered::Int
+end
 
-const CZM = CohesiveProperties(1e8, 50e6, 5e-6, 0.000001)
+# Materialien der Layers
+const Si        =   Material(3e9, 0.28, 675e-6)
+const Parylene  =   Material(2.8e9, 0.4, 10e-6)
+const Steel     =   Material(200e9, 0.3, 200e-6)
+const CZM       = CohesiveProperties(1e8, 30e6, 5e-6, 0.000001)
 
-const L_steel = 50e-3
+# Geometrie der Probe
+const L_steel   = 60e-3
 const L_layered = 5e-3
-const n_elem = 100
-const dx = L_steel / n_elem
-const nodes = collect(0:dx:L_steel)
+const n_elem    = 200               # Finite Elemente Methode benutzt fuer die Modellierung
+const dx        = L_steel / n_elem
+const nodes     = collect(0:dx:L_steel)
 
-const start_pos = 15e-3
-const end_pos = start_pos + L_layered
-const start_elem = floor(Int, start_pos / dx) + 1
-const end_elem = floor(Int, end_pos / dx)
-const n_elem_layered = end_elem - start_elem + 1
+const start_pos         = 15e-3
+const end_pos           = start_pos + L_layered
+const start_elem        = floor(Int, start_pos / dx) + 1
+const end_elem          = floor(Int, end_pos / dx)
+const n_elem_layered    = end_elem - start_elem + 1
 
-function beam_element(E, I, L)
-    k = E * I / L^3 * [
-        12   6*L   -12   6*L
-        6*L  4*L^2 -6*L  2*L^2
-        -12  -6*L   12  -6*L
-        6*L  2*L^2 -6*L  4*L^2
-    ]
-    return k
-end
-
-function cohesive_element(K0, L)
-    k = K0 * L / 2 * [
-        1  0  -1  0
-        0  0   0  0
-       -1  0   1  0
-        0  0   0  0
-    ]
-    return k
-end
-
-function assemble_system(force::Float64)
-    n_dof_steel = length(nodes) * 2
-    n_dof_si = (n_elem_layered + 1) * 2
-    n_dof = n_dof_steel + n_dof_si
-    K = spzeros(n_dof, n_dof)
-    F = zeros(n_dof)
+const setup             = TestSetup(L_steel,L_layered,n_elem,dx,nodes,start_pos,end_pos,start_elem,end_elem,n_elem_layered)
+# Test setup
+max_force = -10.0
+cycles = 10000
     
-    I_si = Si.thickness^3 / 12
-    I_par = Parylene.thickness^3 / 12
-    I_steel = Steel.thickness^3 / 12
-    
-    for i in 1:n_elem
-        idx_steel = [(i-1)*2+1:(i-1)*2+2; (i)*2+1:(i)*2+2]
-        k_steel = beam_element(Steel.E, I_steel, dx)
-        K[idx_steel, idx_steel] += k_steel
-        
-        if i >= start_elem && i <= end_elem
-            k_par = beam_element(Parylene.E, I_par, dx)
-            K[idx_steel, idx_steel] += k_par
-        end
-    end
-    
-    for i in start_elem:end_elem
-        idx_steel = [(i-1)*2+1:(i-1)*2+2; (i)*2+1:(i)*2+2]
-        idx_si = [n_dof_steel + (i-start_elem)*2+1:n_dof_steel + (i-start_elem)*2+2;
-                  n_dof_steel + (i-start_elem+1)*2+1:n_dof_steel + (i-start_elem+1)*2+2]
-        
-        k_si = beam_element(Si.E, I_si, dx)
-        K[idx_si, idx_si] += k_si
-        
-        k_coh = cohesive_element(CZM.K0, dx)
-        K[idx_si, idx_si] += k_coh
-        K[idx_steel, idx_steel] += k_coh
-        K[idx_si, idx_steel] -= k_coh
-        K[idx_steel, idx_si] -= k_coh
-    end
-    
-    mid = div(n_elem, 2) + 1
-    F[mid*2-1] = -force
-    
-    K[1,1] += 1e8  # Left steel support
-    K[n_dof_steel-1,n_dof_steel-1] += 1e8  # Right steel support
-    # Fix Si rotational DOFs at boundaries of layered region to eliminate rank deficiency
-    K[n_dof_steel+2,n_dof_steel+2] += 1e8  # Left Si rotation (29 mm)
-    K[n_dof-1,n_dof-1] += 1e8  # Right Si rotation (31 mm)
-    
-    return K, F
-end
-
-
-function fatigue_degradation!(K, u, cycles, damage, n_dof_steel)
-    for i in 1:n_elem_layered
-        elem = start_elem + i - 1
-        idx_steel = (elem-1)*2 + 1
-        idx_si = n_dof_steel + (i-1)*2 + 1
-        δ = abs(u[idx_si] - u[idx_steel])
-        
-        if δ > 0
-            damage[i] += CZM.m * (δ / CZM.δ_c) * cycles
-            damage[i] = min(damage[i], 1.0)
-            
-            K_factor = (1 - damage[i])
-            idx_steel_full = [(elem-1)*2+1:(elem-1)*2+2; (elem)*2+1:(elem)*2+2]
-            idx_si_full = [n_dof_steel + (i-1)*2+1:n_dof_steel + (i-1)*2+2;
-                          n_dof_steel + i*2+1:n_dof_steel + i*2+2]
-            
-            k_coh_old = cohesive_element(CZM.K0, dx)
-            k_coh_new = cohesive_element(CZM.K0 * K_factor, dx)
-            K[idx_si_full, idx_si_full] += (k_coh_new - k_coh_old)
-            K[idx_steel_full, idx_steel_full] += (k_coh_new - k_coh_old)
-            K[idx_si_full, idx_steel_full] -= (k_coh_new - k_coh_old)
-            K[idx_steel_full, idx_si_full] -= (k_coh_new - k_coh_old)
-        end
-    end
-    return K
-end
-
-function simulate_fatigue(max_force::Float64, n_cycles::Int)
-    damage = zeros(n_elem_layered)
-    u_history = Vector{Vector{Float64}}()
-    n_dof_steel = length(nodes) * 2  # Define locally
-    
-    K_base, F = assemble_system(max_force)
-    println("Rank of K: ", rank(K_base), " Size: ", size(K_base, 1))
-    K = copy(K_base)
-    u_initial = K \ F
-    println("Initial Max Steel Deflection (μm): ", maximum(abs.(u_initial[1:2:n_dof_steel])) * 1e6)
-    println("Initial Max Si Deflection (μm): ", maximum(abs.(u_initial[n_dof_steel+1:2:end])) * 1e6)
-    
-    for cycle in 1:n_cycles
-        u = K \ F
-        push!(u_history, copy(u))
-        
-        K = copy(K_base)
-        K = fatigue_degradation!(K, u, 1.0, damage, n_dof_steel)
-    end
-    
-    return u_history, damage
-end
+println("Starting simulation...")
+u_hist, damage = simulate_fatigue(setup,max_force, cycles,Si,Parylene,Steel,CZM)
+println("Simulation completed. Generating plots with Makie...")
 
 function plot_results(u_hist, damage)
     forces=[]
@@ -215,8 +114,6 @@ function plot_results(u_hist, damage)
         println("Cycle: ", cycles[i], ", Separation: ", round(crack_over_cycles[i], digits=2))
     end
     
-    fig = Figure(resolution=(1200, 800))
-    
     fig = Figure(resolution=(1200, 1000))  # Increased height for extra plot
     
     ax1 = Axis(fig[1, 1], title="Steel Beam Deformation (3-Point Bending)", xlabel="Position (mm)", ylabel="Deflection (μm)")
@@ -242,18 +139,10 @@ function plot_results(u_hist, damage)
     display(fig)
 end
 
-function main()
-    max_force = -10.0
-    cycles = 10000
+plot_results(u_hist, damage)
     
-    println("Starting simulation...")
-    u_hist, damage = simulate_fatigue(max_force, cycles)
-    println("Simulation completed. Generating plots with Makie...")
-    
-    plot_results(u_hist, damage)
-    
-    return u_hist, damage
-end
 
-u_hist, damage = main()
+
+
+
 
