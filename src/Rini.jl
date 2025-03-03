@@ -3,8 +3,9 @@ module Rini
     using SymPy
     using LinearAlgebra
     using SparseArrays
+    using Statistics
     
-
+    
     include("AnalytischesModell.jl")
     include("properties.jl")
     include("FCZM.jl")
