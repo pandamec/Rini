@@ -39,7 +39,7 @@ const CZM       =   CohesiveProperties(1e8, 30e6, 0.0035, 0.000001)
 # Geometrie der Probe
 const L_steel   = 60e-3
 const L_layered = 5e-3
-const n_elem    = 200               # Finite Elemente Methode benutzt fuer die Modellierung
+const n_elem    = 500               # Finite Elemente Methode benutzt fuer die Modellierung
 const dx        = L_steel / n_elem
 const nodes     = collect(0:dx:L_steel)
 
@@ -52,7 +52,7 @@ const n_elem_layered    = end_elem - start_elem + 1
 const setup             = TestSetup(L_steel,L_layered,n_elem,dx,nodes,start_pos,end_pos,start_elem,end_elem,n_elem_layered)
 # Test setup
 max_force = -10.0
-cycles = 10
+cycles = 1000
     
 println("Starting simulation...")
 u_hist, damage = simulate_fatigue(setup,max_force, cycles,Si,Parylene,Steel,CZM)
