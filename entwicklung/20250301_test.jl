@@ -34,7 +34,7 @@ end
 const Si        =   Material(3e9, 0.28, 675e-6)
 const Parylene  =   Material(2.8e9, 0.4, 10e-6)
 const Steel     =   Material(200e9, 0.3, 200e-6)
-const CZM       = CohesiveProperties(1e8, 30e6, 5e-6, 0.000001)
+const CZM       =   CohesiveProperties(1e8, 30e6, 0.0035, 0.000001)
 
 # Geometrie der Probe
 const L_steel   = 60e-3
@@ -52,7 +52,7 @@ const n_elem_layered    = end_elem - start_elem + 1
 const setup             = TestSetup(L_steel,L_layered,n_elem,dx,nodes,start_pos,end_pos,start_elem,end_elem,n_elem_layered)
 # Test setup
 max_force = -10.0
-cycles = 10000
+cycles = 10
     
 println("Starting simulation...")
 u_hist, damage = simulate_fatigue(setup,max_force, cycles,Si,Parylene,Steel,CZM)
@@ -69,13 +69,16 @@ function plot_results(u_hist, damage)
     x_layered = range(start_pos, end_pos, length=n_elem_layered + 1) .* 1e3
     parylene_deflection = zeros(n_elem_layered + 1)
     si_deflection = zeros(n_elem_layered + 1)
+
+    ## Interface Krafte
     for i in 1:n_elem_layered + 1
         elem = start_elem + i - 1
-        parylene_deflection[i] = u_last[(elem-1)*2 + 1] * 1e6 - steel_deflection[start_elem]
-        si_deflection[i] = u_last[n_dof_steel + (i-1)*2 + 1] * 1e6 
+        parylene_deflection[i] = u_last[(elem-1)*2 + 1] * 1e6 #- steel_deflection[start_elem]
+        si_deflection[i] = u_last[n_dof_steel + (i-1)*2 + 1] * 1e6 + steel_deflection[elem]
 
         if i <= n_elem_layered
             δ = abs(u_last[n_dof_steel + (i-1)*2 + 1] - u_last[(elem-1)*2 + 1])
+            
             push!(forces,CZM.K0 * (1 - damage[i]) * δ * dx)  # Force in N (unit width)
         end
 
@@ -85,7 +88,8 @@ function plot_results(u_hist, damage)
     separation = zeros(n_elem_layered)
     for i in 1:n_elem_layered
         elem = start_elem + i - 1
-        separation[i] = abs(u_last[n_dof_steel + (i-1)*2 + 1] - u_last[(elem-1)*2 + 1]) * 1e6
+        #separation[i] = abs(u_last[n_dof_steel + (i-1)*2 + 1] - u_last[(elem-1)*2 + 1]) * 1e6
+        separation[i] = si_deflection[i] - parylene_deflection[i] 
     end
     
     mid_elem = div(n_elem_layered, 2) + 1

@@ -1,7 +1,5 @@
 module Rini
 
-    #greet() = print("Hello World!")
-
     using SymPy
     using LinearAlgebra
     using SparseArrays
