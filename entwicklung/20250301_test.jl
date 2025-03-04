@@ -40,7 +40,7 @@ const CZM       =   CohesiveProperties(1e8, 20e6, 0.00025, 1e-4)
 # Geometrie der Probe
 const L_steel   = 60e-3
 const L_layered = 5e-3
-const n_elem    = 100               # Finite Elemente Methode benutzt fuer die Modellierung
+const n_elem    = 300               # Finite Elemente Methode benutzt fuer die Modellierung
 const dx        = L_steel / n_elem
 const nodes     = collect(0:dx:L_steel)
 
@@ -65,7 +65,7 @@ function update_plot_results!(u_hist, damage, m,damage_history)
     forces = []
     n_dof_steel = length(nodes) * 2
     u_last = u_hist[end]
-    u_mid=u_hist[1000]
+    u_mid=u_hist[17000]
     x_steel = nodes .* 1e3
     steel_deflection = u_last[1:2:n_dof_steel] .* 1e6
     
@@ -81,7 +81,7 @@ function update_plot_results!(u_hist, damage, m,damage_history)
 
         if i <= n_elem_layered
             δ = abs(u_mid[n_dof_steel + (i-1)*2 + 1] - u_mid[(elem-1)*2 + 1])
-            push!(forces, CZM.K0 * (1 - damage_history[1000][i]) * δ * dx)
+            push!(forces, CZM.K0 * (1 - damage_history[17000][i]) * δ * dx)
         end
     end
     
@@ -134,8 +134,10 @@ end
 #m=[ 2 4 6 8 10]*1e-6
 #label=[ "m=2e-6" "m=4e-6" "m=6e-6" "m=8e-6" "m=10e-6" ] 
 
-m=[  6 8 10]*1e-6
-label=[  "m=6e-6" "m=8e-6" "m=10e-6" ] 
+m=[ 3 5 10 20]*1e-10
+#m=[  6 ]*1e-6
+label=[  "a" "b" "c" "d" ] 
+#label=[  "m=6e-6"  ] 
 
 fig = Figure(resolution=(1200, 1000))
 ax1 = Axis(fig[1, 1], title="Steel Beam Deformation (3-Point Bending)", xlabel="Position (mm)", ylabel="Deflection (μm)")
@@ -143,11 +145,11 @@ vlines!(ax1, [start_pos * 1e3, end_pos * 1e3], color=:black, linestyle=:dash, la
 ax2 = Axis(fig[2, 1], title="Two-Layered Beam Deformation (20–25 mm)", xlabel="Position (mm)", ylabel="Deflection (μm)")
 ax3 = Axis(fig[1, 2], title="Damage Distribution", xlabel="Position (mm)", ylabel="Damage")
 ax4 = Axis(fig[2, 2], title="Separation at the interface", xlabel="Cycle", ylabel="Separation (μm)")
-ax5 = Axis(fig[3, 1:2], title="Internal Forces Between Si and Parylene at 1000 Cycles", xlabel="Position (mm)", ylabel="Force (N)")
+ax5 = Axis(fig[3, 1:2], title="Internal Forces Between Si and Parylene at 15000 Cycles", xlabel="Position (mm)", ylabel="Force (N)")
 
 for i in 1:length(m)
-    const CZM      =   CohesiveProperties(1e8, 20e6, 0.00025, m[i])
-    u_hist, damage,damage_history = simulate_fatigue(setup,max_force, cycles,Si,Parylene,Steel,CZM)
+    CZM_i      =   CohesiveProperties(1e8, 20e6, 0.00025, m[i])
+    u_hist, damage,damage_history = simulate_fatigue(setup,max_force, cycles,Si,Parylene,Steel,CZM_i)
     
     update_plot_results!(u_hist, damage, label[i],damage_history)
     print("läuft noch")
