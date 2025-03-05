@@ -70,14 +70,13 @@ end
 
 function fatigue_degradation!(TestSetup,CZM,K, u, cycles, damage, n_dof_steel)
    damage_hist=zeros(TestSetup.n_elem_layered)
-
+   δ_last = abs(u[n_dof_steel + (TestSetup.n_elem_layered-1)*2 + 1] - u[(TestSetup.start_elem + TestSetup.n_elem_layered- 1-1)*2 + 1])
+        
     for i in 1:TestSetup.n_elem_layered
         elem = TestSetup.start_elem + i - 1
         idx_steel = (elem-1)*2 + 1
         idx_si = n_dof_steel + (i-1)*2 + 1
         δ = abs(u[idx_si] - u[idx_steel])
-        δ_last = abs(u[n_dof_steel + (TestSetup.n_elem_layered-1)*2 + 1] - u[(TestSetup.start_elem + TestSetup.n_elem_layered- 1-1)*2 + 1])
-       
         if δ > 0
             damage[i] += CZM.m * (δ / CZM.δ_c) * cycles
             damage[i] = min(damage[i], 1.0)
@@ -96,11 +95,14 @@ function fatigue_degradation!(TestSetup,CZM,K, u, cycles, damage, n_dof_steel)
             K[idx_steel_full, idx_si_full] -= (k_coh_new - k_coh_old)
         end
     end
-    return K,damage_hist
+    
+    Gc=CZM.K0*(1-damage[TestSetup.n_elem_layered])*δ_last*CZM.δ_c/2
+    return K,damage_hist,Gc
 end
 
 function simulate_fatigue(TestSetup,max_force::Float64, n_cycles::Int,Si,Parylene,Steel,CZM)
     damage = zeros(TestSetup.n_elem_layered)
+    Gc_history = []
     u_history = Vector{Vector{Float64}}()
     n_dof_steel = length(TestSetup.nodes) * 2  # Define locally
     
@@ -118,10 +120,11 @@ function simulate_fatigue(TestSetup,max_force::Float64, n_cycles::Int,Si,Parylen
         push!(u_history, copy(u))
 
         K = copy(K_base)
-        K,damage_hist = fatigue_degradation!(TestSetup,CZM,K, u, cycle, damage, n_dof_steel)
+        K,damage_hist, Gc = fatigue_degradation!(TestSetup,CZM,K, u, cycle, damage, n_dof_steel)
         push!(damage_history,damage_hist)
+        push!(Gc_history,Gc)
     end
     
-    return u_history, damage, damage_history
+    return u_history, damage, damage_history,Gc_history
 end
 

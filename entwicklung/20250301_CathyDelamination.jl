@@ -5,6 +5,7 @@ using Rini
 using GLMakie
 
 # Eigenschaften der Materialien
+
 struct Material
     E::Float64          # Young's modulus (Pa)
     ν::Float64          #   Poisson's ratio
@@ -69,9 +70,10 @@ const setup             = TestSetup(L_steel,L_layered,width_layered,width_steel,
 #println("Simulation completed. Generating plots with Makie...")
 
 
-function update_plot_results!(u_hist, damage, m,damage_history)
+function update_plot_results!(u_hist, damage, m,damage_history,Gc_history)
 
     forces = []
+    interface_stress=[]
     n_dof_steel = length(nodes) * 2
     u_last = u_hist[end]
     u_mid=u_hist[17000]
@@ -91,6 +93,8 @@ function update_plot_results!(u_hist, damage, m,damage_history)
         if i <= n_elem_layered
             δ = abs(u_mid[n_dof_steel + (i-1)*2 + 1] - u_mid[(elem-1)*2 + 1])
             push!(forces, CZM.K0 * (1 - damage_history[17000][i]) * δ * dx)
+            push!(interface_stress, CZM.K0 * (1 - damage_history[17000][i]) * δ * dx/(dx*width_layered*1e6))
+        
         end
     end
     
@@ -124,8 +128,8 @@ function update_plot_results!(u_hist, damage, m,damage_history)
     lines!(ax2, x_layered, si_deflection, color=:purple, linewidth=2, label="Silicon: $m")
     lines!(ax3, x_separation, damage, linewidth=2, label=m)
     lines!(ax4, cycles, crack_over_cycles, linewidth=2, label=m)
-    lines!(ax5, x_separation, forces, linewidth=2, label=m)
-
+    lines!(ax5, x_separation, interface_stress, linewidth=2, label=m)
+    lines!(ax6, cycles, Gc_history, linewidth=2, label=m)
     # Update layout
     fig[1:3, 1:2] = [ax1 ax3; ax2 ax4; ax5 GridLayout()]
     return Dict(
@@ -144,8 +148,11 @@ end
 #label=[ "m=2e-6" "m=4e-6" "m=6e-6" "m=8e-6" "m=10e-6" ] 
 
 #m=[ 3 5 10 20]*1e-10
+
+
 m=[  1 ]*1e-8
 #label=[  "a" "b" "c" "d" ] 
+
 label=[  "m=6e-6"  ] 
 
 fig = Figure(resolution=(1200, 1000))
@@ -154,7 +161,8 @@ vlines!(ax1, [start_pos * 1e3, end_pos * 1e3], color=:black, linestyle=:dash, la
 ax2 = Axis(fig[2, 1], title="Two-Layered Beam Deformation (20–25 mm)", xlabel="Position (mm)", ylabel="Deflection (μm)")
 ax3 = Axis(fig[1, 2], title="Damage Distribution", xlabel="Position (mm)", ylabel="Damage")
 ax4 = Axis(fig[2, 2], title="Separation at the interface", xlabel="Cycle", ylabel="Separation (μm)")
-ax5 = Axis(fig[3, 1:2], title="Internal Forces Between Si and Parylene at 15000 Cycles", xlabel="Position (mm)", ylabel="Force (N)")
+ax5 = Axis(fig[3, 1], title="Internal Stress Between Si and Parylene at 15000 Cycles", xlabel="Position (mm)", ylabel="Stress (MPa)")
+ax6  = Axis(fig[3, 2], title="Critical energy release rate Gc over cycles", xlabel="Cycle", ylabel="Gc (J/m2)")
 
 # Test setup
 max_force = -0.1
@@ -165,10 +173,12 @@ CZM             =   CohesiveProperties(0.5e6, 0.0025,6e-6)
 for i in 1:length(m)
     CZM_i      =   CohesiveProperties(0.5e6, 0.00025, m[i])
 
-    u_hist, damage,damage_history = simulate_fatigue(setup,max_force, cycles,Si,Parylene,Steel,CZM_i)
+    u_hist, damage,damage_history,Gc_history = simulate_fatigue(setup,max_force, cycles,Si,Parylene,Steel,CZM_i)
     
-    update_plot_results!(u_hist, damage, label[i],damage_history)
+    update_plot_results!(u_hist, damage, label[i],damage_history,Gc_history)
+    println("Gc (J/m2): ", CZM_i.G_c)
     print("läuft noch")
+    
 end
 
 axislegend(ax3)
