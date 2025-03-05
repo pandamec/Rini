@@ -8,8 +8,8 @@ function beam_element(E, I, L)
     return k
 end
 
-function cohesive_element(K0, L)
-    k = K0 * L / 2 * [
+function cohesive_element(K0, L,w)
+    k = K0 * w*L / 2 * [
         1  0  -1  0
         0  0   0  0
        -1  0   1  0
@@ -25,9 +25,9 @@ function assemble_system(TestSetup,force::Float64,Si,Parylene,Steel,CZM)
     K = spzeros(n_dof, n_dof)
     F = zeros(n_dof)
     
-    I_si = Si.thickness^3 / 12
-    I_par = Parylene.thickness^3 / 12
-    I_steel = Steel.thickness^3 / 12
+    I_si = Si.thickness^3 *(TestSetup.width_layered)/ 12
+    I_par = Parylene.thickness^3 *(TestSetup.width_layered )/ 12
+    I_steel = Steel.thickness^3 *(TestSetup.width_steel)/ 12
     
     for i in 1:TestSetup.n_elem
         idx_steel = [(i-1)*2+1:(i-1)*2+2; (i)*2+1:(i)*2+2] # DoF
@@ -48,7 +48,7 @@ function assemble_system(TestSetup,force::Float64,Si,Parylene,Steel,CZM)
         k_si = beam_element(Si.E, I_si, TestSetup.dx)
         K[idx_si, idx_si] += k_si
         
-        k_coh = cohesive_element(CZM.K0, TestSetup.dx)
+        k_coh = cohesive_element(CZM.K0, TestSetup.dx,TestSetup.width_layered)
         K[idx_si, idx_si] += k_coh
         K[idx_steel, idx_steel] += k_coh
         K[idx_si, idx_steel] -= k_coh
@@ -88,8 +88,8 @@ function fatigue_degradation!(TestSetup,CZM,K, u, cycles, damage, n_dof_steel)
             idx_si_full = [n_dof_steel + (i-1)*2+1:n_dof_steel + (i-1)*2+2;
                           n_dof_steel + i*2+1:n_dof_steel + i*2+2]
             
-            k_coh_old = cohesive_element(CZM.K0, TestSetup.dx)
-            k_coh_new = cohesive_element(CZM.K0 * K_factor, TestSetup.dx)
+            k_coh_old = cohesive_element(CZM.K0, TestSetup.dx,TestSetup.width_layered)
+            k_coh_new = cohesive_element(CZM.K0 * K_factor, TestSetup.dx,TestSetup.width_layered)
             K[idx_si_full, idx_si_full] += (k_coh_new - k_coh_old)
             K[idx_steel_full, idx_steel_full] += (k_coh_new - k_coh_old)
             K[idx_si_full, idx_steel_full] -= (k_coh_new - k_coh_old)

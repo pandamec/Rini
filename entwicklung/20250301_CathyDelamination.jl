@@ -1,4 +1,5 @@
 
+## 05.03.2025 Ver 0.1 Modell-vorschlag
 ###############################
 using Rini
 using GLMakie
@@ -16,11 +17,20 @@ struct CohesiveProperties
     σ_max::Float64  # Maximum traction (Pa)
     δ_c::Float64    # Critical separation (m)
     m::Float64      # Fatigue degradation parameter
+    G_c:: Float64   # Critical energy release rate (J/m2)
+
+    function CohesiveProperties(σ_max::Float64, δ_c::Float64, m::Float64)
+        K0  = σ_max / δ_c
+        G_c = σ_max* δ_c/2
+        return new(K0, σ_max, δ_c, m,G_c)
+    end
 end
 
 struct TestSetup
     L_steel::Float64  
-    L_layered::Float64  
+    L_layered::Float64 
+    width_layered::Float64
+    width_steel::Float64  
     n_elem::Int 
     dx::Float64  
     nodes::Vector{Float64}
@@ -34,13 +44,15 @@ end
 # Materialien der Layers
 const Si        =   Material(160e9, 0.28, 675e-6)
 const Parylene  =   Material(2.8e9, 0.4, 10e-6)
-const Steel     =   Material(200e9, 0.3, 200e-6)
-const CZM       =   CohesiveProperties(1e8, 20e6, 0.00025, 1e-4)
+const Steel     =   Material(210e9, 0.3, 200e-6)
+
 
 # Geometrie der Probe
 const L_steel   = 60e-3
 const L_layered = 5e-3
-const n_elem    = 300               # Finite Elemente Methode benutzt fuer die Modellierung
+const width_layered=2e-3
+const width_steel=15e-3
+const n_elem    = 100               # Finite Elemente Methode benutzt fuer die Modellierung
 const dx        = L_steel / n_elem
 const nodes     = collect(0:dx:L_steel)
 
@@ -49,11 +61,8 @@ const end_pos           = start_pos + L_layered
 const start_elem        = floor(Int, start_pos / dx) + 1
 const end_elem          = floor(Int, end_pos / dx)
 const n_elem_layered    = end_elem - start_elem + 1
+const setup             = TestSetup(L_steel,L_layered,width_layered,width_steel,n_elem,dx,nodes,start_pos,end_pos,start_elem,end_elem,n_elem_layered)
 
-const setup             = TestSetup(L_steel,L_layered,n_elem,dx,nodes,start_pos,end_pos,start_elem,end_elem,n_elem_layered)
-# Test setup
-max_force = -30.0
-cycles = 50000
     
 #println("Starting simulation...")
 #u_hist, damage = simulate_fatigue(setup,max_force, cycles,Si,Parylene,Steel,CZM)
@@ -134,10 +143,10 @@ end
 #m=[ 2 4 6 8 10]*1e-6
 #label=[ "m=2e-6" "m=4e-6" "m=6e-6" "m=8e-6" "m=10e-6" ] 
 
-m=[ 3 5 10 20]*1e-10
-#m=[  6 ]*1e-6
-label=[  "a" "b" "c" "d" ] 
-#label=[  "m=6e-6"  ] 
+#m=[ 3 5 10 20]*1e-10
+m=[  1 ]*1e-8
+#label=[  "a" "b" "c" "d" ] 
+label=[  "m=6e-6"  ] 
 
 fig = Figure(resolution=(1200, 1000))
 ax1 = Axis(fig[1, 1], title="Steel Beam Deformation (3-Point Bending)", xlabel="Position (mm)", ylabel="Deflection (μm)")
@@ -147,8 +156,15 @@ ax3 = Axis(fig[1, 2], title="Damage Distribution", xlabel="Position (mm)", ylabe
 ax4 = Axis(fig[2, 2], title="Separation at the interface", xlabel="Cycle", ylabel="Separation (μm)")
 ax5 = Axis(fig[3, 1:2], title="Internal Forces Between Si and Parylene at 15000 Cycles", xlabel="Position (mm)", ylabel="Force (N)")
 
+# Test setup
+max_force = -0.1
+cycles = 20000
+
+CZM             =   CohesiveProperties(0.5e6, 0.0025,6e-6)
+
 for i in 1:length(m)
-    CZM_i      =   CohesiveProperties(1e8, 20e6, 0.00025, m[i])
+    CZM_i      =   CohesiveProperties(0.5e6, 0.00025, m[i])
+
     u_hist, damage,damage_history = simulate_fatigue(setup,max_force, cycles,Si,Parylene,Steel,CZM_i)
     
     update_plot_results!(u_hist, damage, label[i],damage_history)
