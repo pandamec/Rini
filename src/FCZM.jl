@@ -71,18 +71,27 @@ end
 function fatigue_degradation!(TestSetup,CZM,K, u, cycles, damage, n_dof_steel)
    damage_hist=zeros(TestSetup.n_elem_layered)
    δ_last = abs(u[n_dof_steel + (TestSetup.n_elem_layered-1)*2 + 1] - u[(TestSetup.start_elem + TestSetup.n_elem_layered- 1-1)*2 + 1])
-        
+   a=0    
+   A=CZM.σ_max/(CZM.δ_c-CZM.δ_max)
     for i in 1:TestSetup.n_elem_layered
         elem = TestSetup.start_elem + i - 1
         idx_steel = (elem-1)*2 + 1
         idx_si = n_dof_steel + (i-1)*2 + 1
         δ = abs(u[idx_si] - u[idx_steel])
+
         if δ > 0
             damage[i] += CZM.m * (δ / CZM.δ_c) * cycles
             damage[i] = min(damage[i], 1.0)
             push!(damage_hist,CZM.m * (δ_last / CZM.δ_c) * cycles)
 
             K_factor = (1 - damage[i])
+            ## Crack length calculation
+            δmax_cycle= (A*CZM.δ_c)/(A+K_factor*CZM.K0)
+
+            if δ>δmax_cycle
+                a=a+TestSetup.dx
+            end
+
             idx_steel_full = [(elem-1)*2+1:(elem-1)*2+2; (elem)*2+1:(elem)*2+2]
             idx_si_full = [n_dof_steel + (i-1)*2+1:n_dof_steel + (i-1)*2+2;
                           n_dof_steel + i*2+1:n_dof_steel + i*2+2]
@@ -97,7 +106,7 @@ function fatigue_degradation!(TestSetup,CZM,K, u, cycles, damage, n_dof_steel)
     end
     
     Gc=CZM.K0*(1-damage[TestSetup.n_elem_layered])*δ_last*CZM.δ_c/2
-    return K,damage_hist,Gc
+    return K,damage_hist,Gc,a
 end
 
 function simulate_fatigue(TestSetup,max_force::Float64, n_cycles::Int,Si,Parylene,Steel,CZM)
@@ -114,17 +123,24 @@ function simulate_fatigue(TestSetup,max_force::Float64, n_cycles::Int,Si,Parylen
     println("Initial Max Si Deflection (μm): ", maximum(abs.(u_initial[n_dof_steel+1:2:end])) * 1e6)
     
     damage_history=Vector{Vector{Float64}}()
-
+    a_history=zeros(n_cycles)
     for cycle in 1:n_cycles
         u = K \ F
         push!(u_history, copy(u))
 
         K = copy(K_base)
-        K,damage_hist, Gc = fatigue_degradation!(TestSetup,CZM,K, u, cycle, damage, n_dof_steel)
+        K,damage_hist, Gc,a = fatigue_degradation!(TestSetup,CZM,K, u, cycle, damage, n_dof_steel)
         push!(damage_history,damage_hist)
         push!(Gc_history,Gc)
+
+        if a>a_history[cycle]
+            a_history[cycle]=a
+        else
+           a_history[cycle]=a_history[cycle-1]
+        end
+
     end
     
-    return u_history, damage, damage_history,Gc_history
+    return u_history, damage, damage_history,Gc_history,a_history
 end
 

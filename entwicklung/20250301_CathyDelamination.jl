@@ -1,5 +1,5 @@
 
-## 05.03.2025 Ver 0.1 Modell-vorschlag
+## 05.03.2025 VAer 0.1 Modell-vorschlag
 ###############################
 using Rini
 using GLMakie
@@ -16,14 +16,16 @@ end
 struct CohesiveProperties
     K0::Float64     # Initial stiffness (N/m³)
     σ_max::Float64  # Maximum traction (Pa)
+    δ_max::Float64  # Maximum separation (m)
     δ_c::Float64    # Critical separation (m)
     m::Float64      # Fatigue degradation parameter
     G_c:: Float64   # Critical energy release rate (J/m2)
 
-    function CohesiveProperties(σ_max::Float64, δ_c::Float64, m::Float64)
-        K0  = σ_max / δ_c
+    
+    function CohesiveProperties(σ_max::Float64,δ_max::Float64, δ_c::Float64, m::Float64)
+        K0  = σ_max / δ_max
         G_c = σ_max* δ_c/2
-        return new(K0, σ_max, δ_c, m,G_c)
+        return new(K0, σ_max,δ_max, δ_c, m,G_c)
     end
 end
 
@@ -53,7 +55,7 @@ const L_steel   = 60e-3
 const L_layered = 5e-3
 const width_layered=2e-3
 const width_steel=15e-3
-const n_elem    = 100               # Finite Elemente Methode benutzt fuer die Modellierung
+const n_elem    = 300               # Finite Elemente Methode benutzt fuer die Modellierung
 const dx        = L_steel / n_elem
 const nodes     = collect(0:dx:L_steel)
 
@@ -70,7 +72,7 @@ const setup             = TestSetup(L_steel,L_layered,width_layered,width_steel,
 #println("Simulation completed. Generating plots with Makie...")
 
 
-function update_plot_results!(u_hist, damage, m,damage_history,Gc_history)
+function update_plot_results!(u_hist, damage, m,damage_history,Gc_history,a_history)
 
     forces = []
     interface_stress=[]
@@ -130,16 +132,17 @@ function update_plot_results!(u_hist, damage, m,damage_history,Gc_history)
     lines!(ax4, cycles, crack_over_cycles, linewidth=2, label=m)
     lines!(ax5, x_separation, interface_stress, linewidth=2, label=m)
     lines!(ax6, cycles, Gc_history, linewidth=2, label=m)
+    lines!(ax7, cycles, a_history*1e6, linewidth=2, label=m)
     # Update layout
-    fig[1:3, 1:2] = [ax1 ax3; ax2 ax4; ax5 GridLayout()]
-    return Dict(
-        "steel_deflection" => steel_deflection,
-        "parylene_deflection" => parylene_deflection,
-        "si_deflection" => si_deflection,
-        "forces" => forces,
-        "separation" => separation,
-        "crack_over_cycles" => crack_over_cycles
-    )
+    #fig[1:3, 1:2] = [ax1 ax3; ax2 ax4; ax5 ax6; ax7 GridLayout()]
+    #return Dict(
+      #  "steel_deflection" => steel_deflection,
+      #  "parylene_deflection" => parylene_deflection,
+      #  "si_deflection" => si_deflection,
+      ##  "forces" => forces,
+       # "separation" => separation,
+       # "crack_over_cycles" => crack_over_cycles
+    #)
 end
 
 
@@ -150,12 +153,13 @@ end
 #m=[ 3 5 10 20]*1e-10
 
 
-m=[  1 ]*1e-8
+m=[  1  ]*1e-8
 #label=[  "a" "b" "c" "d" ] 
 
-label=[  "m=6e-6"  ] 
+label=[  "1"   ] 
 
 fig = Figure(resolution=(1200, 1000))
+
 ax1 = Axis(fig[1, 1], title="Steel Beam Deformation (3-Point Bending)", xlabel="Position (mm)", ylabel="Deflection (μm)")
 vlines!(ax1, [start_pos * 1e3, end_pos * 1e3], color=:black, linestyle=:dash, label="Layered Region")
 ax2 = Axis(fig[2, 1], title="Two-Layered Beam Deformation (20–25 mm)", xlabel="Position (mm)", ylabel="Deflection (μm)")
@@ -163,19 +167,20 @@ ax3 = Axis(fig[1, 2], title="Damage Distribution", xlabel="Position (mm)", ylabe
 ax4 = Axis(fig[2, 2], title="Separation at the interface", xlabel="Cycle", ylabel="Separation (μm)")
 ax5 = Axis(fig[3, 1], title="Internal Stress Between Si and Parylene at 15000 Cycles", xlabel="Position (mm)", ylabel="Stress (MPa)")
 ax6  = Axis(fig[3, 2], title="Critical energy release rate Gc over cycles", xlabel="Cycle", ylabel="Gc (J/m2)")
+ax7  = Axis(fig[4, 1], title="Crack growth", xlabel="Cycle", ylabel="a (um)")
 
 # Test setup
 max_force = -0.1
 cycles = 20000
 
-CZM             =   CohesiveProperties(0.5e6, 0.0025,6e-6)
+CZM             =   CohesiveProperties(0.5e6, 0.0025/2,0.0025,6e-6)
 
 for i in 1:length(m)
-    CZM_i      =   CohesiveProperties(0.5e6, 0.00025, m[i])
+    CZM_i      =   CohesiveProperties(0.5e6, 0.00025/1.3,0.00025, m[i])
 
-    u_hist, damage,damage_history,Gc_history = simulate_fatigue(setup,max_force, cycles,Si,Parylene,Steel,CZM_i)
+    u_hist, damage,damage_history,Gc_history,a_history = simulate_fatigue(setup,max_force, cycles,Si,Parylene,Steel,CZM_i)
     
-    update_plot_results!(u_hist, damage, label[i],damage_history,Gc_history)
+    update_plot_results!(u_hist, damage, label[i],damage_history,Gc_history,a_history)
     println("Gc (J/m2): ", CZM_i.G_c)
     print("läuft noch")
     
@@ -184,3 +189,5 @@ end
 axislegend(ax3)
 axislegend(ax4)
 axislegend(ax5)
+axislegend(ax6)
+axislegend(ax7)
