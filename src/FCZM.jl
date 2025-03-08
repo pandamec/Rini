@@ -71,7 +71,7 @@ end
 function fatigue_degradation!(TestSetup,CZM,K, u, cycles, damage, n_dof_steel)
    damage_hist=zeros(TestSetup.n_elem_layered)
    δ_last = abs(u[n_dof_steel + (TestSetup.n_elem_layered-1)*2 + 1] - u[(TestSetup.start_elem + TestSetup.n_elem_layered- 1-1)*2 + 1])
-   a=0    
+   a=TestSetup.dx*TestSetup.n_elem_layered
    A=CZM.σ_max/(CZM.δ_c-CZM.δ_max)
     for i in 1:TestSetup.n_elem_layered
         elem = TestSetup.start_elem + i - 1
@@ -89,7 +89,7 @@ function fatigue_degradation!(TestSetup,CZM,K, u, cycles, damage, n_dof_steel)
             δmax_cycle= (A*CZM.δ_c)/(A+K_factor*CZM.K0)
 
             if δ>δmax_cycle
-                a=a+TestSetup.dx
+                a=a-TestSetup.dx
             end
 
             idx_steel_full = [(elem-1)*2+1:(elem-1)*2+2; (elem)*2+1:(elem)*2+2]
@@ -136,11 +136,17 @@ function simulate_fatigue(TestSetup,max_force::Float64, n_cycles::Int,Si,Parylen
         if a>a_history[cycle]
             a_history[cycle]=a
         else
-           a_history[cycle]=a_history[cycle-1]
+            if cycle>1
+                a_history[cycle]=a_history[cycle-1]
+            else
+                a_history[cycle]=0
+            end
+
         end
 
     end
     
+
     return u_history, damage, damage_history,Gc_history,a_history
 end
 
