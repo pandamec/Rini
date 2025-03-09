@@ -9,8 +9,9 @@ module Rini
     include("AnalytischesModell.jl")
     include("properties.jl")
     include("FCZM.jl")
+    include("FCZMStructures.jl")
 
     export StaticBeam, properties,  beam_element,cohesive_element,assemble_system,fatigue_degradation,simulate_fatigue
-
+    export Material, CohesiveProperties, FatigueData, TestSetup
     
 end # module Rini
