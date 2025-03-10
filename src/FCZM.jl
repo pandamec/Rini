@@ -166,8 +166,8 @@ function simulate_fatigue(TestSetup,max_force::Float64, n_cycles::Int,Si,Parylen
     #println("Rank of K: ", rank(K_base), " Size: ", size(K_base, 1))
     K = copy(K_base)
     u_initial = K \ F
-    println("Initial Max Steel Deflection (μm): ", maximum(abs.(u_initial[1:2:n_dof_steel])) * 1e6)
-    println("Initial Max Si Deflection (μm): "   , maximum(abs.(u_initial[n_dof_steel+1:2:end])) * 1e6)
+    #println("Initial Max Steel Deflection (μm): ", maximum(abs.(u_initial[1:2:n_dof_steel])) * 1e6)
+    #println("Initial Max Si Deflection (μm): "   , maximum(abs.(u_initial[n_dof_steel+1:2:end])) * 1e6)
     
     damage_history=Vector{Vector{Float64}}()
     a_history=zeros(n_cycles)
@@ -184,11 +184,11 @@ function simulate_fatigue(TestSetup,max_force::Float64, n_cycles::Int,Si,Parylen
         push!(Gc_history,Gc)
         a_history[cycle]=a
 
-        checkpoints=[1000 2000 3000 4000 5000]
-        if cycle in checkpoints
-            println("Gc (J/m2): ", Gc)
-            println("a  (mm): ", a*1000)
-        end
+        #checkpoints=[1000 2000 3000 4000 5000]
+        #if cycle in checkpoints
+         #   println("Gc (J/m2): ", Gc)
+           # println("a  (mm): ", a*1000)
+        #end
         
         
         #if a >  a_history[cycle]

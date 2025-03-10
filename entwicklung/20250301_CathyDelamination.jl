@@ -8,7 +8,7 @@
 ###############################
 using Rini
 using GLMakie
-
+using Optim
 # Eigenschaften der Materialien
 
 # Materialien der Layers
@@ -18,10 +18,10 @@ const Steel     =   Material(210e9, 0.3, 200e-6)
 
 # Geometrie der Probe
 const L_steel   = 60e-3
-const L_layered = 2e-3
+const L_layered = 5e-3
 const width_layered=2e-3
 const width_steel=15e-3
-const n_elem    = 300              # Finite Elemente Methode benutzt fuer die Modellierung
+const n_elem    = 100              # Finite Elemente Methode benutzt fuer die Modellierung
 const dx        = L_steel / n_elem
 const nodes     = collect(0:dx:L_steel)
 
@@ -31,13 +31,6 @@ const start_elem        = floor(Int, start_pos / dx) + 1
 const end_elem          = floor(Int, end_pos / dx)
 const n_elem_layered    = end_elem - start_elem + 1
 const setup             = TestSetup(L_steel,L_layered,width_layered,width_steel,n_elem,dx,nodes,start_pos,end_pos,start_elem,end_elem,n_elem_layered)
-
-# Test Bedingungen
-max_force       = -0.45
-N_cycles        =  5000  # Number of cycles for the experiment
-CZM0            =   CohesiveProperties(0.3e5, 0.0025/3,0.0025,1e-8) #Initial parameters of the Cohesive Zone Model
-fatigueExp      =   FatigueData(44e-6,1e-4) # Example experimental data 
-n_it            = 5
 
 # Plots
 function update_plot_results!(CZM,u_hist, damage, m,damage_history,Gc_history,a_history)
@@ -101,12 +94,10 @@ function update_plot_results!(CZM,u_hist, damage, m,damage_history,Gc_history,a_
     lines!(ax4, cycles, crack_over_cycles, linewidth=2, label=m)
     lines!(ax5, x_separation, interface_stress*1e-6, linewidth=2, label=m)
     lines!(ax6, cycles, Gc_history, linewidth=2, label=m)
-    lines!(ax7, cycles, a_history*1e3, linewidth=2, label=m)
+    lines!(ax7, cycles, a_history*2*1e4, linewidth=2, label=m)
 end
 
 ############ Optimization algorithm ###############
-
-using Optim
 
 # Define the cohesive zone model function
 function FCZMPrediction(CZM_fit, TestSetup,n_cycles,max_force)
@@ -149,7 +140,7 @@ function optimize_FCZM(CZM,TestSetup,max_force,N_cycles,fatigueExp; max_iteratio
     
     # Bounds for parameters (adjust as needed)
     lower_bounds = [0.001, 1e-10,  1e-10,1e-12]
-    upper_bounds = [ 100e6, 1e-3,1e-2, 1e-5]
+    upper_bounds = [ 2e6, 1,1, 1]
     
     # Define the objective function with fixed experimental data
     obj(CZM_fit) = objective_function(CZM_fit, TestSetup,max_force,N_cycles,fatigueExp)
@@ -187,8 +178,22 @@ function main(CZM0,fatigueExp,max_force,N_cycles)
     return CZM_fit
 end
 
-CZM_fit=main(CZM0,fatigueExp,max_force,N_cycles) # Find the better adjusment for the CZM parameter
-#CZM_fit=CZM0
+############## Example 
+
+# Test Bedingungen
+max_force       = -0.11
+N_cycles        =  5000  # Number of cycles for the experiment
+#CZM0            =   CohesiveProperties(0.3e5, 0.0025/3,0.0025,1e-8) #Initial parameters of the Cohesive Zone Model
+fatigueExp      =   FatigueData(44e-6,0.1) # Example experimental data 
+n_it            = 1
+
+#CZM0=CohesiveProperties( 0.1e6, 0.0004, 0.002,1e-8)
+CZM0=CohesiveProperties(1e6, 0.00025/2,0.0002,0.04e-7)
+#CZM_fit= CohesiveProperties( 1e6, 0.00003, 0.0003,1e-10)
+
+#CZM_fit=main(CZM0,fatigueExp,max_force,N_cycles) # Find the better adjusment for the CZM parameter
+CZM_fit=CZM0
+
 ############### Plots Simulation Fit ###########
 
 label="fit"
@@ -202,7 +207,7 @@ label="fit"
     ax4 = Axis(fig[2, 2], title="Separation at the interface", xlabel="Cycle", ylabel="Separation (μm)")
     ax5 = Axis(fig[3, 1], title="Internal Stress Between Si and Parylene at 10% Cycles", xlabel="Position (mm)", ylabel="Stress (MPa)")
     ax6  = Axis(fig[3, 2], title="Critical energy release rate Gc over cycles", xlabel="Cycle", ylabel="Gc (J/m2)")
-    ax7  = Axis(fig[4, 1], title="Crack growth", xlabel="Cycle", ylabel="a (mm)")
+    ax7  = Axis(fig[4, 1], title="Crack growth", xlabel="Cycle", ylabel="a (um)")
 
     u_hist, damage,damage_history,Gc_history,a_history = simulate_fatigue(setup,max_force, N_cycles,Si,Parylene,Steel,CZM_fit)
             
@@ -217,3 +222,4 @@ label="fit"
     
 ######################
 
+  
