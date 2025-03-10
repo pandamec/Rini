@@ -97,6 +97,119 @@ function update_plot_results!(CZM,u_hist, damage, m,damage_history,Gc_history,a_
     lines!(ax7, cycles, a_history,linewidth=2, label=m)
 end
 
+function export_plot_results!(CZM,u_hist, damage, m,damage_history,Gc_history,a_history)
+    forces = []
+    interface_stress=[]
+    n_dof_steel = length(nodes) * 2
+    u_last = u_hist[end]
+    cycle10=Int(length(u_hist)/10)
+    u_mid=u_hist[cycle10]
+    x_steel = nodes .* 1e3
+    steel_deflection = u_last[1:2:n_dof_steel] .* 1e6
+    
+    x_layered = range(start_pos, end_pos, length=n_elem_layered + 1) .* 1e3
+    parylene_deflection = zeros(n_elem_layered + 1)
+    si_deflection = zeros(n_elem_layered + 1)
+
+    # Interface Forces
+    for i in 1:n_elem_layered + 1
+        elem = start_elem + i - 1
+        parylene_deflection[i] = u_last[(elem-1)*2 + 1] * 1e6 - steel_deflection[start_elem]
+        si_deflection[i] = u_last[n_dof_steel + (i-1)*2 + 1] * 1e6
+
+        if i <= n_elem_layered
+            δ = abs(u_mid[n_dof_steel + (i-1)*2 + 1] - u_mid[(elem-1)*2 + 1])
+            push!(forces, CZM.K0 * (1 - damage_history[cycle10][i]) * δ * dx)
+            push!(interface_stress, CZM.K0 * (1 - damage_history[cycle10][i]))
+        
+        end
+    end
+    
+    x_separation = range(start_pos, end_pos, length=n_elem_layered) .* 1e3
+    separation = zeros(n_elem_layered)
+    for i in 1:n_elem_layered
+        elem = start_elem + i - 1
+        separation[i] = si_deflection[i] - parylene_deflection[i] 
+    end
+    
+    s = []
+    for u in u_hist
+        si_deflection_last = u[(start_elem+n_elem_layered)*2 + 1] * 1e6 - steel_deflection[start_elem]
+        parylene_deflection_last = u[n_dof_steel + (n_elem_layered)*2 + 1] * 1e6
+        push!(s, abs(si_deflection_last - parylene_deflection_last))
+    end
+    crack_over_cycles = s
+    cycles = 1:length(u_hist)
+    
+    # Update plots with new data - ensure labels are always included
+    lines!(axx1, cycles, Gc_history, linewidth=4, color=:orange, linestyle=:dot)
+    exp_points=[(1000,Gc_history[1000]),(2000,Gc_history[2000]),(3000,Gc_history[3000]),(4000,Gc_history[4000]),(5000,Gc_history[5000])]
+
+
+    for (x_exp, y_exp) in exp_points
+        vlines!(axx1, [x_exp],color=:black, linestyle=:dash, linewidth=1)
+        hlines!(axx1, [y_exp], color=:black, linestyle=:dash, linewidth=1)
+    end
+
+end
+
+function exportSeparation_plot_results!(CZM,u_hist, damage, m,damage_history,Gc_history,a_history)
+    forces = []
+    interface_stress=[]
+    n_dof_steel = length(nodes) * 2
+    u_last = u_hist[end]
+    cycle10=Int(length(u_hist)/10)
+    u_mid=u_hist[cycle10]
+    x_steel = nodes .* 1e3
+    steel_deflection = u_last[1:2:n_dof_steel] .* 1e6
+    
+    x_layered = range(start_pos, end_pos, length=n_elem_layered + 1) .* 1e3
+    parylene_deflection = zeros(n_elem_layered + 1)
+    si_deflection = zeros(n_elem_layered + 1)
+
+    # Interface Forces
+    for i in 1:n_elem_layered + 1
+        elem = start_elem + i - 1
+        parylene_deflection[i] = u_last[(elem-1)*2 + 1] * 1e6 - steel_deflection[start_elem]
+        si_deflection[i] = u_last[n_dof_steel + (i-1)*2 + 1] * 1e6
+
+        if i <= n_elem_layered
+            δ = abs(u_mid[n_dof_steel + (i-1)*2 + 1] - u_mid[(elem-1)*2 + 1])
+            push!(forces, CZM.K0 * (1 - damage_history[cycle10][i]) * δ * dx)
+            push!(interface_stress, CZM.K0 * (1 - damage_history[cycle10][i]))
+        
+        end
+    end
+    
+    x_separation = range(start_pos, end_pos, length=n_elem_layered) .* 1e3
+    separation = zeros(n_elem_layered)
+    for i in 1:n_elem_layered
+        elem = start_elem + i - 1
+        separation[i] = si_deflection[i] - parylene_deflection[i] 
+    end
+    
+    s = []
+    for u in u_hist
+        si_deflection_last = u[(start_elem+n_elem_layered)*2 + 1] * 1e6 - steel_deflection[start_elem]
+        parylene_deflection_last = u[n_dof_steel + (n_elem_layered)*2 + 1] * 1e6
+        push!(s, abs(si_deflection_last - parylene_deflection_last))
+    end
+    crack_over_cycles = s
+    cycles = 1:length(u_hist)
+    
+    # Update plots with new data - ensure labels are always included
+    lines!(axx2, cycles, crack_over_cycles, linewidth=4, color=:blue, linestyle=:dot)
+    exp_points=[(1000,crack_over_cycles[1000]),(2000,crack_over_cycles[2000]),(3000,crack_over_cycles[3000]),(4000,crack_over_cycles[4000]),(5000,crack_over_cycles[5000])]
+
+
+    for (x_exp, y_exp) in exp_points
+        vlines!(axx2, [x_exp],color=:black, linestyle=:dash, linewidth=1)
+        hlines!(axx2, [y_exp], color=:black, linestyle=:dash, linewidth=1)
+    end
+
+end
+
+
 ############ Optimization algorithm ###############
 
 # Define the cohesive zone model function
@@ -191,7 +304,7 @@ n_it            = 1
 CZM0=CohesiveProperties(1e6, 0.00025/2,0.0002,0.2e-7)
 
 #CZM_fit=main(CZM0,fatigueExp,max_force,N_cycles) # Find the better adjusment for the CZM parameter
-CZM_fit=CZM0
+CZM_fit= CohesiveProperties(999999.9999999994, 0.0001150001830588302, 0.00017444895389732032, 1.9999998230835003e-8)
 
 ############### Plots Simulation Fit ###########
 
@@ -230,11 +343,37 @@ label="model"
     axislegend(ax6)
     axislegend(ax7)
     
+    fig2 = Figure()  # High resolution
+    axx1 = Axis(fig2[1, 1],
+     xlabel=L"Cycle", 
+     ylabel=L"G_{\text{max}} \, (\text{J/m}^2)",
+     xgridvisible = false,ygridvisible = false,
+     xticks=0:1000:5000,
+     yticks=60:2:90,
+     xlabelsize=24,
+      ylabelsize=24,
+      xticklabelsize=20,
+       yticklabelsize=20)
+    export_plot_results!(CZM_fit,u_hist, damage, label,damage_history,Gc_history,a_history)
+    
+    fig3 = Figure()  # High resolution
+    axx2 = Axis(fig3[1, 1],
+     xlabel=L"Cycle", 
+     ylabel=L"\delta \, (\mu m)",
+     xgridvisible = false,ygridvisible = false,
+     xticks=0:1000:5000,
+     yticks=0:0.1:25,
+     xlabelsize=24,
+      ylabelsize=24,
+      xticklabelsize=20,
+       yticklabelsize=20)
+    exportSeparation_plot_results!(CZM_fit,u_hist, damage, label,damage_history,Gc_history,a_history)
+
 ######################
 
 
 function plotPDF(x,y,name,titleFig)
-    ax1 = Axis(fig[1, 1], title=titleFig, xlabel="Position (mm)", ylabel="Deflection (μm)")
+
     
     fig = Figure(resolution=(4000, 3000))  # High resolution
     ax = Axis(fig[1, 1])
