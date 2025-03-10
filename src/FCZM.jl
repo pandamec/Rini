@@ -72,7 +72,7 @@ function FCZM(CZM0,δ,dN,D)
     A   = CZM0.σ_max/(CZM0.δ_c-CZM0.δ_max)
     dD  = CZM0.m * (δ / CZM0.δ_c) * dN 
     D   = D+dD
-    dD= min(D, 1.0)
+    D= min(D, 1.0)
 
     K_factor     = (1 - D)
     δ_max_cycle   = (A*CZM0.δ_c)/(A+K_factor*CZM0.K0)
@@ -86,7 +86,8 @@ function fatigue_degradation!(TestSetup,CZM,K, u, cycles, damage, n_dof_steel)
     
    damage_hist      =   zeros(TestSetup.n_elem_layered)
    #δ_last          =   abs(u[n_dof_steel + (TestSetup.n_elem_layered-1)*2 + 1] - u[(TestSetup.start_elem + TestSetup.n_elem_layered- 1-1)*2 + 1])
-   a                =   TestSetup.n_elem_layered*TestSetup.dx
+   #a                =   TestSetup.n_elem_layered*TestSetup.dx desactivated 10.03.25
+   a                = 0
    #A               =   CZM.σ_max/(CZM.δ_c-CZM.δ_max)
    #n_coh_element   =   0 # Cohesive element where there is a crack tip
    Gc               =   0
@@ -121,12 +122,15 @@ function fatigue_degradation!(TestSetup,CZM,K, u, cycles, damage, n_dof_steel)
             #end
 
             ## Crack length calculation
-
-            if σ    >   CZM_cycle.σ_max
-                a=  a -    TestSetup.dx
+            Gc   = CZM_cycle.G_c
+            #if σ    >   CZM_cycle.σ_max
+            
+            if  1.001*δ > CZM_cycle.δ_c
+                #a=  a -    TestSetup.dx
+                a=  a+TestSetup.dx
                 #n_coh_element=i
-                Gc   = CZM_cycle.σ_max*CZM_cycle.δ_c/2
-
+                #Gc   = CZM_cycle.σ_max*CZM_cycle.δ_c/2
+                
             end
 
              # Update Steifigkeitsmatrix
@@ -182,13 +186,13 @@ function simulate_fatigue(TestSetup,max_force::Float64, n_cycles::Int,Si,Parylen
         K,damage_hist, Gc,a = fatigue_degradation!(TestSetup,CZM,K, u, cycle, damage, n_dof_steel)
         push!(damage_history,damage_hist)
         push!(Gc_history,Gc)
-        a_history[cycle]=a
+        a_history[cycle]=a*0.8e5 # pending correction
 
-        #checkpoints=[1000 2000 3000 4000 5000]
-        #if cycle in checkpoints
-         #   println("Gc (J/m2): ", Gc)
-           # println("a  (mm): ", a*1000)
-        #end
+        checkpoints=[1000 2000 3000 4000 5000]
+        if cycle in checkpoints
+            println("Gc (J/m2): ", Gc)
+            println("a  (um): ", a)
+        end
         
         
         #if a >  a_history[cycle]

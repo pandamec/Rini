@@ -94,7 +94,7 @@ function update_plot_results!(CZM,u_hist, damage, m,damage_history,Gc_history,a_
     lines!(ax4, cycles, crack_over_cycles, linewidth=2, label=m)
     lines!(ax5, x_separation, interface_stress*1e-6, linewidth=2, label=m)
     lines!(ax6, cycles, Gc_history, linewidth=2, label=m)
-    lines!(ax7, cycles, a_history*2*1e4, linewidth=2, label=m)
+    lines!(ax7, cycles, a_history,linewidth=2, label=m)
 end
 
 ############ Optimization algorithm ###############
@@ -137,10 +137,10 @@ function optimize_FCZM(CZM,TestSetup,max_force,N_cycles,fatigueExp; max_iteratio
     # Initial guess for parameters [Gc0, k1, k2, σ_max]
     
     initial_params = [CZM.σ_max, CZM.δ_max,CZM.δ_c, CZM.m]
-    
+    #CZM0=CohesiveProperties(1e6, 0.00025/2,0.0002,2e-8)
     # Bounds for parameters (adjust as needed)
-    lower_bounds = [0.001, 1e-10,  1e-10,1e-12]
-    upper_bounds = [ 2e6, 1,1, 1]
+    lower_bounds = [0.1, 0.0001,  0.0001,1e-10]
+    upper_bounds = [ 2e6, 0.001, 0.001, 1e-5]
     
     # Define the objective function with fixed experimental data
     obj(CZM_fit) = objective_function(CZM_fit, TestSetup,max_force,N_cycles,fatigueExp)
@@ -181,33 +181,43 @@ end
 ############## Example 
 
 # Test Bedingungen
-max_force       = -0.11
+max_force       = -0.1
 N_cycles        =  5000  # Number of cycles for the experiment
 #CZM0            =   CohesiveProperties(0.3e5, 0.0025/3,0.0025,1e-8) #Initial parameters of the Cohesive Zone Model
-fatigueExp      =   FatigueData(44e-6,0.1) # Example experimental data 
+fatigueExp      =   FatigueData(44,28e-6) # Example experimental data 
 n_it            = 1
 
 #CZM0=CohesiveProperties( 0.1e6, 0.0004, 0.002,1e-8)
-CZM0=CohesiveProperties(1e6, 0.00025/2,0.0002,0.04e-7)
-#CZM_fit= CohesiveProperties( 1e6, 0.00003, 0.0003,1e-10)
+CZM0=CohesiveProperties(1e6, 0.00025/2,0.0002,0.2e-7)
 
 #CZM_fit=main(CZM0,fatigueExp,max_force,N_cycles) # Find the better adjusment for the CZM parameter
 CZM_fit=CZM0
 
 ############### Plots Simulation Fit ###########
 
-label="fit"
+label="model"
 
     fig = Figure(resolution=(1200, 1000))
 
-    ax1 = Axis(fig[1, 1], title="Steel Beam Deformation (3-Point Bending)", xlabel="Position (mm)", ylabel="Deflection (μm)")
+    #ax1 = Axis(fig[1, 1], title="Steel Beam Deformation (3-Point Bending)", xlabel="Position (mm)", ylabel="Deflection (μm)")
+    #vlines!(ax1, [start_pos * 1e3, end_pos * 1e3], color=:black, linestyle=:dash, label="Layered Region")
+    #ax2 = Axis(fig[2, 1], title="Two-Layered Beam Deformation (20–25 mm)", xlabel="Position (mm)", ylabel="Deflection (μm)")
+    #ax3 = Axis(fig[1, 2], title="Damage Distribution", xlabel="Position (mm)", ylabel="Damage")
+    #ax4 = Axis(fig[2, 2], title="Separation at the interface", xlabel="Cycle", ylabel="Separation (μm)")
+    #ax5 = Axis(fig[3, 1], title="Internal Stress Between Si and Parylene at 10% Cycles", xlabel="Position (mm)", ylabel="Stress (MPa)")
+    #ax6  = Axis(fig[3, 2], title="Critical energy release rate Gc over cycles", xlabel="Cycle", ylabel="Gmax (J/m2)")
+    #ax7  = Axis(fig[4, 1], title="Crack growth", xlabel="Cycle", ylabel="a (um)")
+
+    ax1     = Axis(fig[1, 1], xlabel="Position (mm)", ylabel="Deflection (μm)")
     vlines!(ax1, [start_pos * 1e3, end_pos * 1e3], color=:black, linestyle=:dash, label="Layered Region")
-    ax2 = Axis(fig[2, 1], title="Two-Layered Beam Deformation (20–25 mm)", xlabel="Position (mm)", ylabel="Deflection (μm)")
-    ax3 = Axis(fig[1, 2], title="Damage Distribution", xlabel="Position (mm)", ylabel="Damage")
-    ax4 = Axis(fig[2, 2], title="Separation at the interface", xlabel="Cycle", ylabel="Separation (μm)")
-    ax5 = Axis(fig[3, 1], title="Internal Stress Between Si and Parylene at 10% Cycles", xlabel="Position (mm)", ylabel="Stress (MPa)")
-    ax6  = Axis(fig[3, 2], title="Critical energy release rate Gc over cycles", xlabel="Cycle", ylabel="Gc (J/m2)")
-    ax7  = Axis(fig[4, 1], title="Crack growth", xlabel="Cycle", ylabel="a (um)")
+    ax2     = Axis(fig[2, 1], xlabel="Position (mm)", ylabel="Deflection (μm)",xgridvisible = false,ygridvisible = false)
+    ax3     = Axis(fig[1, 2], xlabel="Position (mm)", ylabel="Damage",xgridvisible = false,ygridvisible = false)
+    ax4     = Axis(fig[2, 2], xlabel=L"Cycle", ylabel=L"\delta \, (\mu m)", xgridvisible = false, ygridvisible = false)
+    ax5     = Axis(fig[3, 1], xlabel=L"Position (mm)", ylabel="Stress (MPa)",xgridvisible = false,ygridvisible = false)
+    ax6     = Axis(fig[3, 2], xlabel=L"Cycle", ylabel=L"G_{\text{max}} \, (\text{J/m}^2)",xgridvisible = false,ygridvisible = false)
+    ax7     = Axis(fig[4, 1], xlabel=L"Cycle", ylabel=L"a \, (\mu m)",xgridvisible = false,ygridvisible = false,xlabelcolor = :black,
+    ylabelcolor = :black)
+
 
     u_hist, damage,damage_history,Gc_history,a_history = simulate_fatigue(setup,max_force, N_cycles,Si,Parylene,Steel,CZM_fit)
             
@@ -222,4 +232,13 @@ label="fit"
     
 ######################
 
-  
+
+function plotPDF(x,y,name,titleFig)
+    ax1 = Axis(fig[1, 1], title=titleFig, xlabel="Position (mm)", ylabel="Deflection (μm)")
+    
+    fig = Figure(resolution=(4000, 3000))  # High resolution
+    ax = Axis(fig[1, 1])
+
+    lines!(ax, 0..10, sin)
+
+end
