@@ -93,14 +93,14 @@ function fatigue_degradation!(TestSetup,CZM,K, u, cycles, damage, n_dof_steel)
    Gc               =   0
    #δmax_cycle      =   []
    #K_factor_cycle  =   0
-
+   CZM_cycle=[]
    for e in 1:TestSetup.n_elem_layered
         i           = TestSetup.n_elem_layered-e +1 # From last element to the first one
         elem        = TestSetup.start_elem + i - 1
         idx_steel   = (elem-1)*2 + 1
         idx_si      = n_dof_steel + (i-1)*2 + 1
         δ           = abs(u[idx_si] - u[idx_steel])
-
+        
         if δ > 0
             # Damage per beam element computation
             CZM_cycle,damage[i] = FCZM(CZM,δ,cycles,damage[i])
@@ -157,7 +157,7 @@ function fatigue_degradation!(TestSetup,CZM,K, u, cycles, damage, n_dof_steel)
    #Gc   = CZM.K0*K_factor_cycle*δmax_cycle*CZM.δ_c/2
     #δmax_cycle= (A*CZM.δ_c)/(A+K_factor_cycle*CZM.K0)
   
-    return K,damage_hist,Gc,a
+    return K,damage_hist,Gc,a, CZM_cycle
 end
 
 function simulate_fatigue(TestSetup,max_force::Float64, n_cycles::Int,Si,Parylene,Steel,CZM)
@@ -165,7 +165,7 @@ function simulate_fatigue(TestSetup,max_force::Float64, n_cycles::Int,Si,Parylen
     Gc_history  = []
     u_history   = Vector{Vector{Float64}}()
     n_dof_steel = length(TestSetup.nodes) * 2  # Defined locally
-    
+    CZM_history = []
     K_base, F = assemble_system(TestSetup,max_force,Si,Parylene,Steel,CZM)
     #println("Rank of K: ", rank(K_base), " Size: ", size(K_base, 1))
     K = copy(K_base)
@@ -183,9 +183,10 @@ function simulate_fatigue(TestSetup,max_force::Float64, n_cycles::Int,Si,Parylen
         push!(u_history, copy(u))
         K = copy(K_base) 
 
-        K,damage_hist, Gc,a = fatigue_degradation!(TestSetup,CZM,K, u, cycle, damage, n_dof_steel)
+        K,damage_hist, Gc,a, CZM_cycle = fatigue_degradation!(TestSetup,CZM,K, u, cycle, damage, n_dof_steel)
         push!(damage_history,damage_hist)
         push!(Gc_history,Gc)
+        push!(CZM_history,CZM_cycle)
         a_history[cycle]=a*0.8e5 # pending correction
 
         checkpoints=[1000 2000 3000 4000 5000]
@@ -209,6 +210,6 @@ function simulate_fatigue(TestSetup,max_force::Float64, n_cycles::Int,Si,Parylen
     end
     
 
-    return u_history, damage, damage_history,Gc_history,a_history
+    return u_history, damage, damage_history,Gc_history,a_history, CZM_history
 end
 

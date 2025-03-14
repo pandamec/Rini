@@ -269,7 +269,7 @@ label="model"
     ylabelcolor = :black)
 
 
-    u_hist, damage,damage_history,Gc_history,a_history = simulate_fatigue(setup,max_force, N_cycles,Si,Parylene,Steel,CZM_fit)
+    u_hist, damage,damage_history,Gc_history,a_history, CZM_hist = simulate_fatigue(setup,max_force, N_cycles,Si,Parylene,Steel,CZM_fit)
             
     update_plot_results!(CZM_fit,u_hist, damage, label,damage_history,Gc_history,a_history)
     println("Gc (J/m2): ", CZM_fit.G_c)
@@ -306,15 +306,9 @@ label="model"
        yticklabelsize=20)
     exportSeparation_plot_results!(CZM_fit,u_hist, damage, label,damage_history,Gc_history,a_history)
 
-######################
+###################### Cycle evaluation ########
 
+dN=5000
 
-function plotPDF(x,y,name,titleFig)
-
-    
-    fig = Figure(resolution=(4000, 3000))  # High resolution
-    ax = Axis(fig[1, 1])
-
-    lines!(ax, 0..10, sin)
-
-end
+CZM_i=Rini.FCZM(CZM_fit,0,dN,0)
+CZM_fit
