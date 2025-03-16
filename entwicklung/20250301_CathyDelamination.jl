@@ -1,10 +1,10 @@
 
 #### Log
     ## 05.03.2025 VAer 0.1 Modell-vorschlag
-    ## 07.03.2025 Ver  0.2 Crack growth idea added
-    ## 08.03.2025 Ver  0.3 Optimization algorithm started
-    ## 09.03.2025 Ver  0.4 Optimisierung-vorschlag. FCZM Funktion getrennt
-
+    ## 07.03.2025 Ver  0.1.1 Crack growth idea added
+    ## 08.03.2025 Ver  0.1.2 Optimization algorithm started
+    ## 09.03.2025 Ver  0.1.3 Optimisierung-vorschlag. FCZM Funktion getrennt
+    ## 16.03.2025 Ver  0.2 Eurosime Run
 ###############################
 using Rini
 using GLMakie
