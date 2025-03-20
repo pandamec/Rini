@@ -234,17 +234,21 @@ end
 max_force       = -0.1
 N_cycles        =  5000  # Number of cycles for the experiment
 #CZM0            =   CohesiveProperties(0.3e5, 0.0025/3,0.0025,1e-8) #Initial parameters of the Cohesive Zone Model
+#fatigueExp      =   FatigueData(44,28e-6) # Example experimental data 
 fatigueExp      =   FatigueData(44,28e-6) # Example experimental data 
+
 n_it            = 1
 
-#CZM0=CohesiveProperties( 0.1e6, 0.0004, 0.002,1e-8)
-CZM0=CohesiveProperties(1e6, 0.00025/2,0.0002,0.2e-7)
+#CZM0=CohesiveProperties(1e6, 0.00025/2,0.0002,0.2e-7) Current Values
+CZM0=CohesiveProperties(5e6, 1e-5,2e-5,0.2e-9)
 
 CZM_fit=main(CZM0,fatigueExp,max_force,N_cycles) # Find the better adjusment for the CZM parameter
-CZM_fit= CohesiveProperties(999999.9999999994, 0.0001150001830588302, 0.00017444895389732032, 1.9999998230835003e-8)
+
+#CZM_fit= CohesiveProperties(999999.9999999994, 0.0001150001830588302, 0.00017444895389732032, 1.9999998230835003e-8) Current values
 
 ############### Plots Simulation Fit ###########
 
+CZM_result=CohesiveProperties(5e6,1e-5,1.24e-5,1e-10)
 label="model"
 
     fig = Figure(resolution=(1200, 1000))
@@ -271,8 +275,8 @@ label="model"
 
     u_hist, damage,damage_history,Gc_history,a_history, CZM_hist = simulate_fatigue(setup,max_force, N_cycles,Si,Parylene,Steel,CZM_fit)
             
-    update_plot_results!(CZM_fit,u_hist, damage, label,damage_history,Gc_history,a_history)
-    println("Gc (J/m2): ", CZM_fit.G_c)
+    update_plot_results!(CZM_result,u_hist, damage, label,damage_history,Gc_history,a_history)
+    println("Gc (J/m2): ", CZM_result.G_c)
 
     axislegend(ax3)
     axislegend(ax4)
@@ -286,12 +290,12 @@ label="model"
      ylabel=L"G_{\text{max}} \, (\text{J/m}^2)",
      xgridvisible = false,ygridvisible = false,
      xticks=0:1000:5000,
-     yticks=60:2:90,
+     #yticks=5:5:40,
      xlabelsize=24,
       ylabelsize=24,
       xticklabelsize=20,
        yticklabelsize=20)
-    export_plot_results!(CZM_fit,u_hist, damage, label,damage_history,Gc_history,a_history)
+    export_plot_results!(CZM_result,u_hist, damage, label,damage_history,Gc_history,a_history)
     
     fig3 = Figure()  # High resolution
     axx2 = Axis(fig3[1, 1],

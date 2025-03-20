@@ -15,5 +15,6 @@ SymPy = "24249f21-da20-56a4-8eb1-6a02cf4ae2e6"
 
 [compat]
 FileIO = "1.17.0"
+GLMakie = "0.11.3"
 Images = "0.26.2"
 Optim = "1.11.0"
