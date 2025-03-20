@@ -2,7 +2,7 @@
 # Define the cohesive zone model function
 function FCZMPrediction(CZM_fit, TestSetup,n_cycles,max_force,Si,Parylene,Steel)
     CZM = CohesiveProperties(CZM_fit[1],CZM_fit[2],CZM_fit[3],CZM_fit[4])
-    u_hist, damage,damage_history,Gc_history,a_history = simulate_fatigue(TestSetup,max_force, n_cycles,Si,Parylene,Steel,CZM)
+    u_hist, damage,damage_history,Gc_history,a_history,CZM_history = simulate_fatigue(TestSetup,max_force, n_cycles,Si,Parylene,Steel,CZM)
 
     crack_length=a_history[end]
 
