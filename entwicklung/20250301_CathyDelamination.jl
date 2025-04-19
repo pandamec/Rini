@@ -4,8 +4,8 @@
     ## 07.03.2025 Ver  0.1.1 Crack growth idea added
     ## 08.03.2025 Ver  0.1.2 Optimization algorithm started
     ## 09.03.2025 Ver  0.1.3 Optimisierung-vorschlag. FCZM Funktion getrennt
-    ## 16.03.2025 Ver  0.2 Eurosime Run
-    ## 19.04.2025 Ver  0.3 Separation removed for fitting on going
+    ## 16.03.2025 Ver  0.2-3 Eurosime Run und Ordnung
+    ## 19.04.2025 Ver  0.4 Separation removed for fitting on going
     
 ###############################
 using Rini
