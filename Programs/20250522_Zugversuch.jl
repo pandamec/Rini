@@ -13,11 +13,14 @@ l=15*1e-3
 
 As=w*t
 
+using Plots
 
 function import_TIRA(file_path)
     
     df=CSV.read(file_path,DataFrame) 
     df.Zeit = parse.(Float64, replace.(df.Zeit, "," => "."))
+    df.Länge = parse.(Float64, replace.(df.Länge, "," => "."))
+    df.Weg = parse.(Float64, replace.(df.Weg, "," => "."))
     df.Dehnung = parse.(Float64, replace.(df.Dehnung, "," => "."))
     df.Kraft = parse.(Float64, replace.(df.Kraft, "," => "."))
 
@@ -29,8 +32,12 @@ file_path = "Programs/250522-1.csv"
 
 df=import_TIRA(file_path)
 T=df[!,:Zeit]
-X=df[!,:Dehnung]
+#X=df[!,:Dehnung]
+#X=df[!,:Länge]
+X=df[!,:Weg]/18
+
 Y=df[!,:Kraft].*1e-6/As
+
 # Fit a 1st-degree polynomial (linear)
 
 p = fit(X[7000:9000], Y[7000:9000], 1)
@@ -45,7 +52,7 @@ plot!(Xfit, Yfit, linewidth=1)
 
 # Customize title and axes
 title!("Tensile test")
-xlabel!("Strain (%)")
+xlabel!("Strain ")
 ylabel!("Normal Stress (MPa)")
 
 
@@ -59,7 +66,7 @@ As=w*t
 
 df=import_TIRA(file_path)
 T=df[!,:Zeit]
-X=df[!,:Dehnung]
+X=df[!,:Weg]./21
 Y=df[!,:Kraft].*1e-6/As
 
 
