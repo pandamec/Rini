@@ -5,7 +5,12 @@ using Plots
 
 Fig=plot()
 Figzoom=plot()
-using Rini
+
+include("D:/01 Projekt/03 Programm/Rini aktuell/Rini/src/Rini.jl")
+
+
+using Pkg
+
 
 E_m=Rini.E_Aluminium(100)
 ####### Fatigue-Test
