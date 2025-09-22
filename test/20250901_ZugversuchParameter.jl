@@ -104,7 +104,7 @@ deltamax=range(0,2e-3,10) #mm
 
     end
 
-    plot!(Fig,deltamax, sigmaSi, label="Si", lw=2, linestyle=:dash, color=:black, marker=:square)
+    Plots.plot!(Fig,deltamax, sigmaSi, label="Si", lw=2, linestyle=:dash, color=:black, marker=:square)
     plot!(Fig,deltamax, sigmaPa_max, label="Parylene max", lw=2, linestyle=:dash, color=:yellow, marker=:circle)
     plot!(Fig,deltamax, sigmaPa_min, label="Parylene min", xlabel="Verschiebungsamplitude(mm)", ylabel="Belastung (MPa)", lw=2, linestyle=:dash, color=:gray, marker=:circle)
     plot!(Fig,deltamax, sigmaSteel, label="Stahl min", xlabel="Verschiebungsamplitude(mm)", ylabel="Belastung (MPa)", lw=2, linestyle=:dash, color=:gray, marker=:circle)
@@ -125,6 +125,7 @@ deltamax=range(0,2e-3,10) #mm
     plot!(FigStrainRate,deltamax, sigmaSteel*(4*freq)/Steel.E, label="Stahl", xlabel="Verschiebungsamplitude(mm)", ylabel="Strain Rate", lw=2, linestyle=:dash, color=:gray, marker=:circle)
 
     plot!(FigSpeedRate,deltamax*1000, -sigmaPa_min*(4*freq)*60*10/Parylene.E, label="Parylene", xlabel="Verschiebungsamplitude(mm)", ylabel="Speed Rate @10mm, f1.2 (mm/min)",  lw=2, linestyle=:dash, color=:yellow, marker=:circle)
+    plot!(FigSpeedRate,deltamax*1000, -sigmaPa_min*(4*freq)*60*100/Parylene.E, label="Parylene", xlabel="Verschiebungsamplitude(mm)", ylabel="Speed Rate @10mm, f1.2 (mm/min)",  lw=2, linestyle=:dash, color=:yellow, marker=:circle)
     
     
 
