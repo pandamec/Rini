@@ -36,8 +36,9 @@ T=df[!,:Zeit]
 #X=df[!,:Länge]
 X=df[!,:Weg]/18
 X2= df[6989:end,:Länge]/18 # According to Uwe
-
+X3=df[!,:Weg]
 Y=(df[6989:end,:Kraft].-df[6989,:Kraft]).*1e-6/As
+Y2=df[!,:Kraft]
 
 # Fit a 1st-degree polynomial (linear)
 p_strain=fit(T[1:1000],X2[1:1000]*100*60,1)
@@ -69,7 +70,36 @@ fig
 
 save("tensile.svg",fig)
 
-Plots.scatter(X2[1:1000]*100, Y[1:1000], label="Width 5 mm, speed 1mm/min", linewidth=1)
+
+# Plot the first curve with lines and markers
+fig2 = Figure(resolution = (1000,600))
+
+font=36
+ax2 = Axis(fig2[1,1],
+    xlabel = L"Verschiebung (mm)",
+    ylabel = L"F (N)",
+    xlabelsize = font,
+    ylabelsize = font,
+    xticklabelsize = font - 2,
+    yticklabelsize = font - 2,
+    #xgridstyle = :dash,        # dashed grid
+    #ygridstyle = :dash
+    xgridvisible = false,
+    ygridvisible = false
+
+)
+p_strain=fit(T[7000:8000],X3[7000:8000]*60,1)
+Makie.scatter!(ax2,X3, Y2; markersize=12, label="Width 5 mm, speed rate 1 mm/min",color=:orange)
+#Makie.lines!(ax,Xfit*100, Yfit; linewidth=5, label= "linear fit",color=:black)
+axislegend(ax2, position=:rb, labelsize=font-10, framevisible=false)
+fig2
+
+########
+
+
+
+
+Plots.scatter(X2[1:1000]*100, Y[1:1000], label="Width 5 mm, speed mm/min", linewidth=1)
 Plots.plot!(Xfit*100, Yfit, linewidth=3)
 
 
