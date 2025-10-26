@@ -23,6 +23,7 @@ function import_TIRA(file_path)
     df.Weg = parse.(Float64, replace.(df.Weg, "," => "."))
     df.Dehnung = parse.(Float64, replace.(df.Dehnung, "," => "."))
     df.Kraft = parse.(Float64, replace.(df.Kraft, "," => "."))
+    df.dL_ORG = parse.(Float64, replace.(df.dL_ORG, "," => "."))
 
     return df
 
@@ -33,9 +34,11 @@ file_path = "test/250522-1.csv"
 df=import_TIRA(file_path)
 T=df[!,:Zeit]
 #X=df[!,:Dehnung]
-#X=df[!,:Länge]
+#X4=df[!,:Länge]
 X=df[!,:Weg]/18
 X2= df[6989:end,:Länge]/18 # According to Uwe
+#X2= df[6989:end,:Dehnung] # According to Uwe
+
 X3=df[!,:Weg]
 Y=(df[6989:end,:Kraft].-df[6989,:Kraft]).*1e-6/As
 Y2=df[!,:Kraft]
