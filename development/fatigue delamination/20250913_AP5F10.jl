@@ -22,7 +22,7 @@ function importTest(path)
     return df
 end
 
-file_path = "datei/AP5F10_Fatigue.csv"
+file_path = "development/fatigue delamination/AP5F10_Fatigue.csv"
 
 df=importTest(file_path)
 df_study=importTest(file_path)
