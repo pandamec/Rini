@@ -277,7 +277,10 @@ df_Polyimide = CSV.read(BaseName, DataFrame;
     decimal=','
 )
 
-df_Polyimide=filter_range(df_Polyimide,"Strain",0,0.02)
+df_Polyimide=filter_range(df_Polyimide,"Strain",0,0.12)
+df_Polyimide[!,2]=df_Polyimide[!,2].*140 .+20
+
+CSV.write("Dharmadasa2020Corrected.csv", df_Polyimide)
 
 ## Fig1
 
