@@ -28,7 +28,7 @@ module TIRA
         return row === nothing ? missing : df[row, return_col]
     end
 
-    function computeE(X,Y)
+    function computeE(X,Y,T)
 
 
         p_fit=fit(X,Y,1)
@@ -45,8 +45,14 @@ module TIRA
         e=(residuals./Y)*100
         e_max=maximum(e)
         u_E=u_E*100/E
-        df=DataFrame(StrainFit=X*100, StressFit=y_fit*1000)
-        return E,u_E,e_max,df
+
+        fit_X_T    = fit(T,X,1)
+        strainRate = fit_X_T[1]*60*100
+
+        df_sum= DataFrame(Zeit=T,Strain=X*100, StressFit=y_fit*1000) # s Percentage MPa 
+        
+        
+        return E, u_E, e_max, df_sum, strainRate
 
     end
 
@@ -74,9 +80,9 @@ module TIRA
         X_linear=df_linear[!,:dL_ORG] # Percentage
         Y_linear=df_linear[!,:Stress] #MPa
 
-        fit_X_T    = fit(T_linear,X_linear*60,1)
-        strainRate = fit_X_T[1]
-        E_modul,u_E,e_max,df_fit=    computeE(X_linear/100,Y_linear/1000)
+        #fit_X_T    = fit(T_linear./60,X_linear,1)
+        #strainRate = fit_X_T[1]
+        E_modul,u_E,e_max,df_fit,strainRate=    computeE(X_linear/100,Y_linear/1000,T_linear) #Strain, #MGPa
         sigmaB      =   maximum(Y)
         sigmaF      =   maximum(Y_linear)
         δ_B         =   get_corresponding(df,:Stress,maximum(df[!,:Stress]),:dL_ORG)
