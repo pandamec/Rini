@@ -28,6 +28,22 @@ module TIRA
         return row === nothing ? missing : df[row, return_col]
     end
 
+
+    function setZero(BaseName,name,i,ϵ_zero)
+
+        file_path = "$(BaseName)$(i).csv"
+        df=import_TIRA(file_path)
+        df[!,:Name]=fill("$(name)$(i)", nrow(df))
+
+        df_zero=filter_range(df,"dL_ORG",ϵ_zero[1],ϵ_zero[2])
+
+        df_zero[!,:dL_ORG]=  df_zero[!,:dL_ORG] .- df_zero[1,:dL_ORG]
+        df_zero[!,:Kraft]=df_zero[!,:Kraft].-df_zero[1,:Kraft]
+        
+        return df_zero
+    end
+
+
     function computeE(X,Y,T)
 
 
@@ -56,17 +72,30 @@ module TIRA
 
     end
 
-    function computeStressStrain(BaseName,name,i,Temp,As)
+    function computeStressStrainRaw(BaseName,name,i,Temp,As)
 
         file_path = "$(BaseName)$(i).csv"
         df=import_TIRA(file_path)
         df[!,:Name]=fill("$(name)$(i)", nrow(df))
         df[!,:Stress]=df[!,:Kraft]*1e-6/As
-        df[!,:Strain]=(df[!,:dL_ORG])
+        df[!,:Strain]=(df[!,:dL_ORG]) #Computed with the videoextensometer value
         df[!,:Temperature]=fill(Temp,nrow(df))
         
         return df
     end
+
+
+    
+    function computeStressStrain(df,As,Temp)
+
+
+        df[!,:Stress]=df[!,:Kraft]*1e-6/As
+        df[!,:Strain]=(df[!,:dL_ORG]) #Computed with the videoextensometer value
+        df[!,:Temperature]=fill(Temp,nrow(df))
+
+        return df
+    end
+
 
     function computeProperties(df,LinearRange,StressRange)
 
@@ -80,9 +109,7 @@ module TIRA
         X_linear=df_linear[!,:dL_ORG] # Percentage
         Y_linear=df_linear[!,:Stress] #MPa
 
-        #fit_X_T    = fit(T_linear./60,X_linear,1)
-        #strainRate = fit_X_T[1]
-        E_modul,u_E,e_max,df_fit,strainRate=    computeE(X_linear/100,Y_linear/1000,T_linear) #Strain, #MGPa
+        E_modul,u_E,e_max,df_fit,strainRate  = computeE(X_linear/100,Y_linear/1000,T_linear) #Strain, #MGPa
         sigmaB      =   maximum(Y)
         sigmaF      =   maximum(Y_linear)
         δ_B         =   get_corresponding(df,:Stress,maximum(df[!,:Stress]),:dL_ORG)
@@ -91,6 +118,7 @@ module TIRA
                  " Strain Rate[%/min]"=>strainRate,
                  "E[GPa] "=>E_modul,
                  "u_E[%] "=>u_E,
+                 "u_E[GPa] "=>u_E*E_modul/100,
                  "e_max[%]" =>e_max,
                  "sigma0_25% "=> sigmaF,
                  "sigmaMax"=> sigmaB,
