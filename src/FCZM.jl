@@ -180,19 +180,20 @@ function simulate_fatigue(TestSetup,max_force::Float64, n_cycles::Int,Si,Parylen
 
     for cycle in 1:n_cycles
         u = K \ F   # Displacement(deflection) of beam elements nodes
-        push!(u_history, copy(u))
+        #push!(u_history, copy(u))
         K = copy(K_base) 
 
-        K,damage_hist, Gc,a, CZM_cycle = fatigue_degradation!(TestSetup,CZM,K, u, cycle, damage, n_dof_steel)
+        K,damage_hist, Gc,a = fatigue_degradation!(TestSetup,CZM,K, u, cycle, damage, n_dof_steel)
+        u = K \ F
+        push!(u_history, copy(u))
         push!(damage_history,damage_hist)
         push!(Gc_history,Gc)
-        push!(CZM_history,CZM_cycle)
-        a_history[cycle]=a*0.8e5 # pending correction
-
+        a_history[cycle]=a*0.8e4 # pending correction
+        
         checkpoints=[1000 2000 3000 4000 5000]
         if cycle in checkpoints
             println("Gc (J/m2): ", Gc)
-            println("a  (um): ", a)
+            println("a  (um): ", a*0.8e4) # added 16.03.25 changed from 0.8e5 to 0.8e4
         end
         
         

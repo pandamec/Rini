@@ -8,11 +8,28 @@ function FCZMPrediction(CZM_fit, TestSetup,n_cycles,max_force,Si,Parylene,Steel)
 
     n_dof_steel = length(TestSetup.nodes) * 2
     u_last = u_hist[end]
+    u_90=u_hist[n_cycles-100]
+
     steel_deflection = u_last[1:2:n_dof_steel] 
 
         si_deflection_last = u_last[(TestSetup.start_elem+TestSetup.n_elem_layered)*2 + 1]  - steel_deflection[TestSetup.start_elem]
         parylene_deflection_last = u_last[n_dof_steel + (TestSetup.n_elem_layered)*2 + 1]
         s=abs(si_deflection_last - parylene_deflection_last)
+
+
+    si_deflection_90 = u_90[(TestSetup.start_elem+TestSetup.n_elem_layered)*2 + 1]  - steel_deflection[TestSetup.start_elem]
+    parylene_deflection_90 = u_90[n_dof_steel + (TestSetup.n_elem_layered)*2 + 1]
+    s_90=abs(si_deflection_90 - parylene_deflection_90)
+
+
+    if 100*(s-s_90)/s < 1
+        separation= 0
+
+    else
+        separation=s
+    end
+
+
 
     fatigueModel=FatigueData(crack_length,s)
     println("CZM(K0,σ_max,δ_max,δ_c,m,G_c): ", CZM)
@@ -27,6 +44,8 @@ function objective_function(CZM_fit, TestSetup,max_force,n_cycles,fatigueExp,Si,
     # Calculate sum of squared errors
   
     error = (fatigueModel.crack_length- fatigueExp.crack_length)^2 + (fatigueModel.separation- fatigueExp.separation)^2 
+    println("Cracklength ", fatigueModel.crack_length)
+    println("Separation ", fatigueModel.separation)
     println("error: ", error)
     return error
 end
@@ -39,9 +58,12 @@ function optimize_FCZM(CZM,TestSetup,max_force,N_cycles,fatigueExp; max_iteratio
     initial_params = [CZM.σ_max, CZM.δ_max,CZM.δ_c, CZM.m]
     
     # Bounds for parameters (adjust as needed)
-    lower_bounds = [0.1, 0.0001,  0.0001,1e-10]
-    upper_bounds = [ 2e6, 0.001, 0.001, 1e-5]
-    
+    #lower_bounds = [0.1, 0.0001,  0.0001,1e-10]
+    #upper_bounds = [ 2e6, 0.001, 0.001, 1e-5]
+
+    lower_bounds = [0.1, 1e-11,  1e-11,1e-10]
+    upper_bounds = [ 50e6, 1e-3, 1e-3, 1e-8]
+
     # Define the objective function with fixed experimental data
     obj(CZM_fit) = objective_function(CZM_fit, TestSetup,max_force,N_cycles,fatigueExp,Si,Parylene,Steel)
     
